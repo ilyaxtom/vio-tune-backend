@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/.idea
+**/test
+**/*.spec.ts
+.gitignore
+.git
+.prettierrc
+Dockerfile
+README.md
+.env
