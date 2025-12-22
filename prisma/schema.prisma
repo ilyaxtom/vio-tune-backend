@@ -97,8 +97,8 @@ model Song {
 }
 
 model Genre {
-  id    String  @id @default(uuid())
-  name  String
+  id     String  @id @default(uuid())
+  name   String
   albums Album[]
 }
 
