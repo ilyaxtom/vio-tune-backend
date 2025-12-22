@@ -48,6 +48,8 @@ model User {
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
+
+  @@map("users")
 }
 
 model Artist {
@@ -59,6 +61,8 @@ model Artist {
 
   songs  Song[]
   albums Album[]
+
+  @@map("artists")
 }
 
 model Album {
@@ -79,6 +83,7 @@ model Album {
   genreId String?
 
   @@index([artistId])
+  @@map("albums")
 }
 
 model Song {
@@ -93,12 +98,16 @@ model Song {
   albumId      String
   playlistItem PlaylistItem[]
   artistId     String
+
+  @@map("songs")
 }
 
 model Genre {
   id     String  @id @default(uuid())
   name   String
   albums Album[]
+
+  @@map("genres")
 }
 
 model Playlist {
@@ -110,6 +119,8 @@ model Playlist {
   userLikePlaylist UserLikePlaylist[]
   user             User?              @relation(fields: [userId], references: [id])
   userId           String?
+
+  @@map("playlists")
 }
 
 model PlaylistItem {
@@ -120,6 +131,7 @@ model PlaylistItem {
   song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   @@id([playlistId, songId])
+  @@map("playlistItems")
 }
 
 model UserLikeSong {
@@ -130,6 +142,7 @@ model UserLikeSong {
   song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   @@id([userId, songId])
+  @@map("userLikeSongs")
 }
 
 model UserLikeAlbum {
@@ -140,6 +153,7 @@ model UserLikeAlbum {
   album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
 
   @@id([userId, albumId])
+  @@map("userLikeAlbums")
 }
 
 model UserLikePlaylist {
@@ -150,4 +164,5 @@ model UserLikePlaylist {
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
 
   @@id([userId, playlistId])
+  @@map("userLikePlaylists")
 }
