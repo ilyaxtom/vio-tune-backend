@@ -47,6 +47,18 @@ services:
       db:
         condition: service_healthy
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - .env
+    volumes:
+      - "minio_data:/data"
+    command: server /data --console-address ":9001"
+
 volumes:
   vio-tune-data:
   node_modules:
+  minio_data:
