@@ -6,19 +6,21 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 
 import { CreateArtistDto } from "music/artist/dto/CreateArtist.dto";
 import { UpdateArtistDto } from "music/artist/dto/UpdateArtist.dto";
 import { ArtistService } from "music/artist/services/artist.service";
+import { PageOptionsDto } from "shared/dto/page-options.dto";
 
 @Controller("artists")
 export class ArtistController {
   constructor(private readonly artistService: ArtistService) {}
 
   @Get()
-  getArtists() {
-    return this.artistService.findAll();
+  getArtists(@Query() pageOptions: PageOptionsDto) {
+    return this.artistService.findAll(pageOptions);
   }
 
   @Get(":id")

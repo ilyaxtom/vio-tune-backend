@@ -4,6 +4,9 @@ import { Prisma } from "@prisma/client";
 import { CreateArtistDto } from "music/artist/dto/CreateArtist.dto";
 import { UpdateArtistDto } from "music/artist/dto/UpdateArtist.dto";
 import { PrismaService } from "prisma/services/prisma.service";
+import { PageDto } from "shared/dto/page.dto";
+import { PageMetaDto } from "shared/dto/page-meta.dto";
+import { PageOptionsDto } from "shared/dto/page-options.dto";
 
 @Injectable()
 export class ArtistService {
@@ -26,8 +29,23 @@ export class ArtistService {
     }
   }
 
-  async findAll() {
-    return await this.prismaService.artist.findMany();
+  async findAll(pageOptions: PageOptionsDto) {
+    const { page, limit } = pageOptions;
+
+    const [items, count] = await this.prismaService.$transaction([
+      this.prismaService.artist.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          name: "asc",
+        },
+      }),
+      this.prismaService.artist.count(),
+    ]);
+
+    const pageMeta = new PageMetaDto(pageOptions, count);
+
+    return new PageDto(items, pageMeta);
   }
 
   async findById(id: string) {
