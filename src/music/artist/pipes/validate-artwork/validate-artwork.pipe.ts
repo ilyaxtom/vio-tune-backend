@@ -6,6 +6,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 @Injectable()
 export class ValidateArtworkPipe implements PipeTransform {
   async transform(file: Express.Multer.File) {
+    // todo: refactor pipes: convert images
     if (!file) {
       return file;
     }

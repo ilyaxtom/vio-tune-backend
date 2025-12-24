@@ -55,6 +55,7 @@ model User {
 model Artist {
   id        String   @id @default(uuid())
   name      String
+  slug      String?  @unique
   artwork   String
   country   String
   updatedAt DateTime @updatedAt
@@ -69,6 +70,7 @@ model Album {
   id          String    @id @default(uuid())
   artistId    String
   title       String
+  slug        String?
   releaseDate DateTime
   artwork     String
   copyright   String
@@ -113,6 +115,7 @@ model Genre {
 model Playlist {
   id               String             @id @default(uuid())
   title            String
+  slug             String             @unique
   visibility       PlaylistVisibility
   createdAt        DateTime           @default(now())
   playlistItem     PlaylistItem[]

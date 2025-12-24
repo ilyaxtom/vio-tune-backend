@@ -13,6 +13,9 @@ export class ArtistResponseDto {
   @Expose()
   country: string;
 
+  @Expose()
+  slug: string;
+
   @Exclude()
   updatedAt: Date;
 }

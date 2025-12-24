@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { nanoid } from "nanoid";
+import slugify from "slugify";
 
 import { CreateArtistDto } from "music/artist/dto/create-artist.dto";
 import { UpdateArtistDto } from "music/artist/dto/update-artist.dto";
@@ -18,9 +20,9 @@ export class ArtistService {
     private readonly artistArtworkService: ArtistArtworkService,
   ) {}
 
-  private async getArtistOrFail(id: string) {
+  private async getArtistOrFail(slug: string) {
     const artist = await this.prismaService.artist.findUnique({
-      where: { id },
+      where: { slug },
     });
 
     if (!artist) {
@@ -59,9 +61,9 @@ export class ArtistService {
     return new PageDto(items, pageMeta);
   }
 
-  async findById(id: string) {
+  async findBySlug(slug: string) {
     const artist = await this.prismaService.artist.findUnique({
-      where: { id },
+      where: { slug },
     });
 
     if (!artist) {
@@ -72,22 +74,28 @@ export class ArtistService {
   }
 
   async create(createArtistDto: CreateArtistDto, artwork: Express.Multer.File) {
+    const baseSlug = slugify(createArtistDto.name, {
+      lower: true,
+      strict: true,
+    });
+    const slug = `${baseSlug}-${nanoid(6)}`;
+
     const key = await this.artistArtworkService.upload(
       createArtistDto.name,
       artwork,
     );
 
     return await this.prismaService.artist.create({
-      data: { ...createArtistDto, artwork: key },
+      data: { ...createArtistDto, slug, artwork: key },
     });
   }
 
   async update(
-    id: string,
+    slug: string,
     updateArtistDto: UpdateArtistDto,
     artwork: Express.Multer.File,
   ) {
-    const artist = await this.getArtistOrFail(id);
+    const artist = await this.getArtistOrFail(slug);
 
     const updates = { ...updateArtistDto };
 
@@ -102,14 +110,14 @@ export class ArtistService {
       await this.artistArtworkService.delete(artist.artwork);
     }
 
-    return this.prismaService.artist.update({ where: { id }, data: updates });
+    return this.prismaService.artist.update({ where: { slug }, data: updates });
   }
 
-  async delete(id: string) {
-    const artist = await this.getArtistOrFail(id);
+  async delete(slug: string) {
+    const artist = await this.getArtistOrFail(slug);
 
     await this.artistArtworkService.delete(artist.artwork);
 
-    return this.prismaService.artist.delete({ where: { id } });
+    return this.prismaService.artist.delete({ where: { slug } });
   }
 }

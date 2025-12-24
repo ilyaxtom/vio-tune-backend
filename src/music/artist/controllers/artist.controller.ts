@@ -31,10 +31,10 @@ export class ArtistController {
     return this.artistService.findAll(pageOptions);
   }
 
-  @Get(":id")
+  @Get(":slug")
   @UseInterceptors(ResponseInterceptor)
-  getArtistById(@Param("id") id: string) {
-    return this.artistService.findById(id);
+  getArtistById(@Param("slug") slug: string) {
+    return this.artistService.findBySlug(slug);
   }
 
   @Post()
@@ -47,19 +47,19 @@ export class ArtistController {
     return this.artistService.create(createArtistDto, file);
   }
 
-  @Patch(":id")
+  @Patch(":slug")
   @UseInterceptors(FileInterceptor("artwork"), ResponseInterceptor)
   updateArtist(
-    @Param("id") id: string,
+    @Param("slug") slug: string,
     @Body() updateArtistDto: UpdateArtistDto,
     @UploadedFile(ValidateArtworkPipe) file: Express.Multer.File,
   ) {
-    return this.artistService.update(id, updateArtistDto, file);
+    return this.artistService.update(slug, updateArtistDto, file);
   }
 
-  @Delete(":id")
+  @Delete(":slug")
   @UseInterceptors(ResponseInterceptor)
-  deleteArtist(@Param("id") id: string) {
-    return this.artistService.delete(id);
+  deleteArtist(@Param("slug") slug: string) {
+    return this.artistService.delete(slug);
   }
 }

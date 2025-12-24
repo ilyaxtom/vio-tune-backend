@@ -9,6 +9,7 @@ const secretKey = process.env.MINIO_SECRET_KEY;
 const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
 const region = process.env.MINIO_REGION;
 
+// todo: configure s3
 export const S3Provider = {
   provide: S3_PROVIDER,
   useFactory: () => {
