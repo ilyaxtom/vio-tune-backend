@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { nanoid } from "nanoid";
+import slugify from "slugify";
 
 import { MinioService } from "minio/services/minio.service";
 
@@ -8,7 +9,8 @@ export class ArtistArtworkService {
   constructor(private readonly minioService: MinioService) {}
 
   async upload(name: string, artwork: Express.Multer.File) {
-    const key = `artists/artworks/${name}-${nanoid(6)}`;
+    const fileName = slugify(name, { lower: true, strict: true });
+    const key = `artists/artworks/${slugify(fileName)}-${nanoid(6)}`;
 
     await this.minioService.upload(key, artwork.buffer, artwork.mimetype);
 

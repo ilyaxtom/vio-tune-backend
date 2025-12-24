@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 import { CreateArtistDto } from "music/artist/dto/create-artist.dto";
 import { UpdateArtistDto } from "music/artist/dto/update-artist.dto";
@@ -30,17 +31,27 @@ export class ArtistService {
   }
 
   async findAll(pageOptions: PageOptionsDto) {
-    const { page, limit } = pageOptions;
+    const { page, limit, search, order } = pageOptions;
+
+    const where = search
+      ? {
+          name: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        }
+      : undefined;
 
     const [items, count] = await this.prismaService.$transaction([
       this.prismaService.artist.findMany({
+        where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
-          name: "asc",
+          name: order,
         },
       }),
-      this.prismaService.artist.count(),
+      this.prismaService.artist.count({ where }),
     ]);
 
     const pageMeta = new PageMetaDto(pageOptions, count);
