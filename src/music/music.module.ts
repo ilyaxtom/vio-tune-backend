@@ -1,4 +1,8 @@
 import { Module } from "@nestjs/common";
 
-@Module({})
+import { ArtistModule } from "./artist/artist.module";
+
+@Module({
+  imports: [ArtistModule],
+})
 export class MusicModule {}

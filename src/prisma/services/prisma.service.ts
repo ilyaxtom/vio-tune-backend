@@ -1,11 +1,12 @@
 import {
   Injectable,
+  InternalServerErrorException,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
-
-import { PrismaClient } from "generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
 @Injectable()
 export class PrismaService
@@ -13,6 +14,20 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+
+  constructor() {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+      throw new InternalServerErrorException("Missing DATABASE_URL");
+    }
+
+    const adapter = new PrismaPg({
+      connectionString: databaseUrl,
+    });
+
+    super({ adapter });
+  }
 
   async onModuleInit() {
     try {

@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -49,23 +48,29 @@ model User {
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
+
+  @@map("users")
 }
 
 model Artist {
   id        String   @id @default(uuid())
   name      String
+  slug      String?  @unique
   artwork   String
   country   String
   updatedAt DateTime @updatedAt
 
   songs  Song[]
   albums Album[]
+
+  @@map("artists")
 }
 
 model Album {
   id          String    @id @default(uuid())
   artistId    String
   title       String
+  slug        String?
   releaseDate DateTime
   artwork     String
   copyright   String
@@ -80,6 +85,7 @@ model Album {
   genreId String?
 
   @@index([artistId])
+  @@map("albums")
 }
 
 model Song {
@@ -94,23 +100,30 @@ model Song {
   albumId      String
   playlistItem PlaylistItem[]
   artistId     String
+
+  @@map("songs")
 }
 
 model Genre {
   id     String  @id @default(uuid())
   name   String
   albums Album[]
+
+  @@map("genres")
 }
 
 model Playlist {
   id               String             @id @default(uuid())
   title            String
+  slug             String             @unique
   visibility       PlaylistVisibility
   createdAt        DateTime           @default(now())
   playlistItem     PlaylistItem[]
   userLikePlaylist UserLikePlaylist[]
   user             User?              @relation(fields: [userId], references: [id])
   userId           String?
+
+  @@map("playlists")
 }
 
 model PlaylistItem {
@@ -121,6 +134,7 @@ model PlaylistItem {
   song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   @@id([playlistId, songId])
+  @@map("playlistItems")
 }
 
 model UserLikeSong {
@@ -131,6 +145,7 @@ model UserLikeSong {
   song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   @@id([userId, songId])
+  @@map("userLikeSongs")
 }
 
 model UserLikeAlbum {
@@ -141,6 +156,7 @@ model UserLikeAlbum {
   album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
 
   @@id([userId, albumId])
+  @@map("userLikeAlbums")
 }
 
 model UserLikePlaylist {
@@ -151,4 +167,5 @@ model UserLikePlaylist {
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
 
   @@id([userId, playlistId])
+  @@map("userLikePlaylists")
 }
