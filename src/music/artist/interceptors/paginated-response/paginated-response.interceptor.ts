@@ -9,8 +9,8 @@ import { plainToInstance } from "class-transformer";
 import { map, Observable } from "rxjs";
 
 import { MinioService } from "minio/services/minio.service";
-import { ArtistResponseDto } from "music/artist/dto/response.dto";
-import { PageDto } from "shared/dto/page.dto";
+import { ArtistResponseDto } from "music/artist/dto";
+import { PageDto } from "shared/dto";
 
 @Injectable()
 export class PaginatedResponseInterceptor implements NestInterceptor {

@@ -3,13 +3,10 @@ import { Prisma } from "@prisma/client";
 import { nanoid } from "nanoid";
 import slugify from "slugify";
 
-import { CreateArtistDto } from "music/artist/dto/create-artist.dto";
-import { UpdateArtistDto } from "music/artist/dto/update-artist.dto";
-import { ArtistArtworkService } from "music/artist/services/artist-artwork/artist-artwork.service";
+import { CreateArtistDto, UpdateArtistDto } from "music/artist/dto";
+import { ArtistArtworkService } from "music/artist/services";
 import { PrismaService } from "prisma/services/prisma.service";
-import { PageDto } from "shared/dto/page.dto";
-import { PageMetaDto } from "shared/dto/page-meta.dto";
-import { PageOptionsDto } from "shared/dto/page-options.dto";
+import { PageDto, PageMetaDto, PageOptionsDto } from "shared/dto";
 
 @Injectable()
 export class ArtistService {

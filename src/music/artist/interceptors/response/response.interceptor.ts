@@ -9,7 +9,7 @@ import { plainToInstance } from "class-transformer";
 import { map, Observable } from "rxjs";
 
 import { MinioService } from "minio/services/minio.service";
-import { ArtistResponseDto } from "music/artist/dto/response.dto";
+import { ArtistResponseDto } from "music/artist/dto";
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {

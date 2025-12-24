@@ -15,15 +15,18 @@ import { ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import { RequiredImagePipe } from "minio/pipes/required-image.pipe";
 import { FileUpload } from "music/artist/decorators/file-upload.decorator";
-import { CreateArtistDto } from "music/artist/dto/create-artist.dto";
-import { ArtistResponseDto } from "music/artist/dto/response.dto";
-import { UpdateArtistDto } from "music/artist/dto/update-artist.dto";
-import { PaginatedResponseInterceptor } from "music/artist/interceptors/paginated-response/paginated-response.interceptor";
-import { ResponseInterceptor } from "music/artist/interceptors/response/response.interceptor";
-import { ValidateArtworkPipe } from "music/artist/pipes/validate-artwork/validate-artwork.pipe";
-import { ArtistService } from "music/artist/services/artist/artist.service";
-import { PageDto } from "shared/dto/page.dto";
-import { PageOptionsDto } from "shared/dto/page-options.dto";
+import {
+  ArtistResponseDto,
+  CreateArtistDto,
+  UpdateArtistDto,
+} from "music/artist/dto";
+import {
+  PaginatedResponseInterceptor,
+  ResponseInterceptor,
+} from "music/artist/interceptors";
+import { ValidateArtworkPipe } from "music/artist/pipes/validate-artwork.pipe";
+import { ArtistService } from "music/artist/services";
+import { PageDto, PageOptionsDto } from "shared/dto";
 
 @ApiTags("Artists")
 @Controller("artists")
