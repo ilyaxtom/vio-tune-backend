@@ -1,8 +1,11 @@
 import { Module } from "@nestjs/common";
-import { PrismaModule } from './prisma/prisma.module';
+
+import { MinioModule } from "./minio/minio.module";
+import { MusicModule } from "./music/music.module";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MusicModule, MinioModule],
   controllers: [],
   providers: [],
 })

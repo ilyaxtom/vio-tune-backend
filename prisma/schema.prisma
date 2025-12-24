@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -17,6 +16,18 @@ enum Role {
   USER
   ADMIN
   ARTIST
+}
+
+enum AlbumType {
+  ALBUM
+  SINGLE
+  COMPILATION
+  EP
+}
+
+enum PlaylistVisibility {
+  PUBLIC
+  PRIVATE
 }
 
 model User {
@@ -31,62 +42,88 @@ model User {
   description  String
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   playlists      Playlist[]
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
+
+  @@map("users")
 }
 
 model Artist {
-  id      String @id @default(uuid())
-  name    String
-  country String
+  id        String   @id @default(uuid())
+  name      String
+  slug      String?  @unique
+  artwork   String
+  country   String
+  updatedAt DateTime @updatedAt
 
-  songs Song[]
+  songs  Song[]
+  albums Album[]
+
+  @@map("artists")
 }
 
 model Album {
-  id          String @id @default(uuid())
+  id          String    @id @default(uuid())
+  artistId    String
   title       String
-  releaseYear Int
-  coverUrl    String
+  slug        String?
+  releaseDate DateTime
+  artwork     String
+  copyright   String
+  type        AlbumType
+  recordLabel String
+  url         String
 
+  artist  Artist          @relation(fields: [artistId], references: [id])
   songs   Song[]
   likedBy UserLikeAlbum[]
-  Genre   Genre?          @relation(fields: [genreId], references: [id])
+  genre   Genre?          @relation(fields: [genreId], references: [id])
   genreId String?
+
+  @@index([artistId])
+  @@map("albums")
 }
 
 model Song {
   id       String @id @default(uuid())
   title    String
-  duration String
+  duration Int
   fileUrl  String
 
   artist       Artist         @relation(fields: [artistId], references: [id])
   album        Album          @relation(fields: [albumId], references: [id])
   likedBy      UserLikeSong[]
   albumId      String
-  PlaylistItem PlaylistItem[]
+  playlistItem PlaylistItem[]
   artistId     String
+
+  @@map("songs")
 }
 
 model Genre {
-  id    String  @id @default(uuid())
-  name  String
-  Album Album[]
+  id     String  @id @default(uuid())
+  name   String
+  albums Album[]
+
+  @@map("genres")
 }
 
 model Playlist {
   id               String             @id @default(uuid())
   title            String
-  visibility       String
+  slug             String             @unique
+  visibility       PlaylistVisibility
   createdAt        DateTime           @default(now())
-  PlaylistItem     PlaylistItem[]
-  UserLikePlaylist UserLikePlaylist[]
-  User             User?              @relation(fields: [userId], references: [id])
+  playlistItem     PlaylistItem[]
+  userLikePlaylist UserLikePlaylist[]
+  user             User?              @relation(fields: [userId], references: [id])
   userId           String?
+
+  @@map("playlists")
 }
 
 model PlaylistItem {
@@ -96,7 +133,8 @@ model PlaylistItem {
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
-  @@unique([playlistId, songId])
+  @@id([playlistId, songId])
+  @@map("playlistItems")
 }
 
 model UserLikeSong {
@@ -106,7 +144,8 @@ model UserLikeSong {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, songId])
+  @@id([userId, songId])
+  @@map("userLikeSongs")
 }
 
 model UserLikeAlbum {
@@ -116,7 +155,8 @@ model UserLikeAlbum {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, albumId])
+  @@id([userId, albumId])
+  @@map("userLikeAlbums")
 }
 
 model UserLikePlaylist {
@@ -126,5 +166,6 @@ model UserLikePlaylist {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, playlistId])
+  @@id([userId, playlistId])
+  @@map("userLikePlaylists")
 }

@@ -1,7 +1,7 @@
 {
   "Servers": {
     "1": {
-      "Name": "food-flow",
+      "Name": "vio-tune",
       "Group": "Servers",
       "Host": "db",
       "Port": 5432,
