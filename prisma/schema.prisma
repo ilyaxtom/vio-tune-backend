@@ -32,14 +32,14 @@ enum PlaylistVisibility {
 
 model User {
   id           String   @id @default(uuid())
-  firstName    String
-  lastName     String
+  firstName    String?
+  lastName     String?
   username     String   @unique
   passwordHash String
   email        String   @unique
-  country      String
-  language     String
-  description  String
+  country      String?
+  language     String?
+  description  String?
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
