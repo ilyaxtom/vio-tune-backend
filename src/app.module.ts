@@ -7,6 +7,7 @@ import { MinioModule } from "./minio/minio.module";
 import { MusicModule } from "./music/music.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { UserModule } from "./user/user.module";
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UserModule } from "./user/user.module";
         PORT: joi.number().default(3000),
       }),
     }),
+    MailModule,
   ],
   controllers: [],
   providers: [],
