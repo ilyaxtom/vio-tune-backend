@@ -5,14 +5,13 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Query,
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiResponse } from "@nestjs/swagger";
 
 import { PageDto, PageOptionsDto } from "shared/dto";
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from "user/dto";
+import { UpdateUserDto, UserResponseDto } from "user/dto";
 import { UserService } from "user/services/user.service";
 
 import {
@@ -45,13 +44,6 @@ export class UserController {
   @ApiResponse({ status: 404, description: "User not found" })
   getUserByUsername(@Param("username") username: string) {
     return this.userService.findByUsername(username);
-  }
-
-  @Post()
-  @UseInterceptors(ResponseInterceptor)
-  @ApiResponse({ status: 201, description: "User registered successfully" })
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto, "aslkfjaslkf");
   }
 
   @Patch(":username")

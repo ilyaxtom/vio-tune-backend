@@ -1,14 +1,17 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Request,
   UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
+import { RegisterDto } from "auth/dto/register.dto";
 import type { RequestWithUser } from "auth/interfaces/request-with-user.interface";
 import { AuthService } from "auth/services/auth.service";
 
@@ -27,5 +30,15 @@ export class AuthController {
   @Get("profile")
   getProfile(@Request() req: RequestWithUser) {
     return req.user;
+  }
+
+  @Post("register")
+  async register(@Body() input: RegisterDto) {
+    return this.authService.register(input);
+  }
+
+  @Get("verify")
+  async verifyEmail(@Query("token") token: string) {
+    return this.authService.verifyEmail(token);
   }
 }

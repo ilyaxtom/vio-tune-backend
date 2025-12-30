@@ -78,11 +78,23 @@ export class UserService {
     return user;
   }
 
-  async create(createUserDto: CreateUserDto, passwordHash: string) {
-    const { password, ...userData } = createUserDto;
+  async findByVerificationToken(verificationToken: string) {
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        verificationToken,
+      },
+    });
 
+    if (!user) {
+      throw new NotFoundException(`User with verification token not found`);
+    }
+
+    return user;
+  }
+
+  async create(createUserDto: CreateUserDto) {
     return await this.prismaService.user.create({
-      data: { ...userData, passwordHash },
+      data: { ...createUserDto },
     });
   }
 
@@ -96,6 +108,16 @@ export class UserService {
   async delete(username: string) {
     return await this.prismaService.user.delete({
       where: { username },
+    });
+  }
+
+  async verifyEmail(id: string) {
+    return await this.prismaService.user.update({
+      where: { id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      },
     });
   }
 }
