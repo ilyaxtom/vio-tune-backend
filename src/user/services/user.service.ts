@@ -54,6 +54,18 @@ export class UserService {
     return new PageDto(items, pageMeta);
   }
 
+  async findById(id: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    return user;
+  }
+
   async findByUsername(username: string) {
     const user = await this.prismaService.user.findUnique({
       where: { username },

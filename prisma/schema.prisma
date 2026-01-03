@@ -50,6 +50,7 @@ model User {
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
+  RefreshToken   RefreshToken[]
 
   @@map("users")
 }
@@ -170,4 +171,17 @@ model UserLikePlaylist {
 
   @@id([userId, playlistId])
   @@map("userLikePlaylists")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  hash      String
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

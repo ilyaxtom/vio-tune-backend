@@ -1,6 +1,7 @@
 import { ValidationPipe } from "@nestjs/common";
 import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 
 import { AppModule } from "./app.module";
 import { PrismaClientExceptionFilter } from "./prisma/filters/prisma-client-exception.filter";
@@ -14,6 +15,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.use(cookieParser());
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));

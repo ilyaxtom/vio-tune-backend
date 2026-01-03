@@ -5,30 +5,37 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Query,
-  Request,
+  Req,
+  Res,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import type { Request, Response } from "express";
 
-import { RegisterDto } from "auth/dto/register.dto";
+import { RegisterDto, VerifyEmailDto } from "auth/dto";
 import type { RequestWithUser } from "auth/interfaces/request-with-user.interface";
-import { AuthService } from "auth/services/auth.service";
+import { AuthService } from "auth/services/auth/auth.service";
+import { ResponseInterceptor } from "user/interceptors";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard("local"))
   @Post("login")
-  async login(@Request() req: RequestWithUser) {
-    return this.authService.login(req.user);
+  @UseGuards(AuthGuard("local"))
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.login(req.user, res);
   }
 
-  @UseGuards(AuthGuard("jwt"))
   @Get("profile")
-  getProfile(@Request() req: RequestWithUser) {
+  @UseGuards(AuthGuard("jwt"))
+  @UseInterceptors(ResponseInterceptor)
+  getProfile(@Req() req: RequestWithUser) {
     return req.user;
   }
 
@@ -37,8 +44,18 @@ export class AuthController {
     return this.authService.register(input);
   }
 
-  @Get("verify")
-  async verifyEmail(@Query("token") token: string) {
-    return this.authService.verifyEmail(token);
+  @Post("verify")
+  async verifyEmail(@Body() input: VerifyEmailDto) {
+    return this.authService.verifyEmail(input.token);
+  }
+
+  @Post("refresh")
+  @UseGuards(AuthGuard("jwt"))
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.refreshTokens(req, res);
   }
 }

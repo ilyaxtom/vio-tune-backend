@@ -4,10 +4,11 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
 import { MailService } from "mail/services/mail.service";
+import { PrismaService } from "prisma/services/prisma.service";
 import { UserModule } from "user/user.module";
 
 import { AuthController } from "./controllers/auth.controller";
-import { AuthService } from "./services/auth.service";
+import { AuthService, RefreshTokenService } from "./services";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalStrategy } from "./strategies/local.strategy";
 
@@ -21,12 +22,20 @@ import { LocalStrategy } from "./strategies/local.strategy";
       useFactory: (configService: ConfigService) => ({
         secret: configService.get("JWT_SECRET"),
         signOptions: {
-          expiresIn: configService.get("JWT_EXPIRES_IN", "1d"),
+          expiresIn: "1m",
         },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MailService],
+  providers: [
+    AuthService,
+    RefreshTokenService,
+    PrismaService,
+    LocalStrategy,
+    JwtStrategy,
+    MailService,
+    RefreshTokenService,
+  ],
 })
 export class AuthModule {}
