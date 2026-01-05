@@ -50,7 +50,7 @@ model User {
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
-  RefreshToken   RefreshToken[]
+  Session        Session[]
 
   @@map("users")
 }
@@ -173,15 +173,18 @@ model UserLikePlaylist {
   @@map("userLikePlaylists")
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  hash      String
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  hash       String
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  lastUsedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("refresh_tokens")
+  @@map("sessions")
 }

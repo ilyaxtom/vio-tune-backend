@@ -7,11 +7,12 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import type { Request, Response } from "express";
+import type { Response } from "express";
 
 import { RegisterDto, VerifyEmailDto } from "auth/dto";
 import type { RequestWithUser } from "auth/interfaces/request-with-user.interface";
@@ -29,7 +30,7 @@ export class AuthController {
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.login(req.user, res);
+    return this.authService.login(req.user, req, res);
   }
 
   @Get("profile")
@@ -44,18 +45,24 @@ export class AuthController {
     return this.authService.register(input);
   }
 
-  @Post("verify")
+  @Post("verify-email")
   async verifyEmail(@Body() input: VerifyEmailDto) {
     return this.authService.verifyEmail(input.token);
   }
 
   @Post("refresh")
-  @UseGuards(AuthGuard("jwt"))
+  @UseGuards(AuthGuard("jwt-refresh"))
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.refreshTokens(req, res);
+    const refreshToken = req.cookies?.refresh_token as string;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException();
+    }
+
+    return this.authService.refreshTokens(refreshToken, res);
   }
 }

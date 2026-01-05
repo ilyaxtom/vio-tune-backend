@@ -11,25 +11,27 @@ import type { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { RegisterDto } from "auth/dto";
-import { JwtPayload } from "auth/interfaces/jwt-payload.interface";
-import { RefreshTokenService } from "auth/services";
+import { RequestWithUser } from "auth/interfaces";
+import { SessionService } from "auth/services";
 import { MailService } from "mail/services/mail.service";
 import { UserService } from "user/services/user.service";
 
-import { RequestWithUser } from "../../interfaces/request-with-user.interface";
+const REFRESH_TOKEN_TTL = 2 * 60 * 1000;
+const BCRYPT_SALT_ROUNDS = 12;
 
-const REFRESH_COOKIE_OPTIONS = {
+const REFRESH_OPTIONS = {
   httpOnly: true,
-  secure: false,
+  secure: process.env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
+  maxAge: REFRESH_TOKEN_TTL,
 };
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UserService,
-    private readonly refreshTokenService: RefreshTokenService,
+    private readonly sessionService: SessionService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
@@ -56,26 +58,31 @@ export class AuthService {
     return user;
   }
 
-  async login(user: User, res: Response) {
-    const tokenPayload: JwtPayload = {
-      sub: user.id,
-    };
+  async login(user: User, req: RequestWithUser, res: Response) {
+    const rawToken = uuidv4();
+    const hash = await bcrypt.hash(rawToken, BCRYPT_SALT_ROUNDS);
 
-    const accessToken = await this.jwtService.signAsync(tokenPayload);
-
-    const refreshToken = await this.createRefreshToken(user.id);
-
-    res.cookie("refresh_token", refreshToken, {
-      ...REFRESH_COOKIE_OPTIONS,
-      maxAge: 2 * 60 * 1000,
+    const session = await this.sessionService.save({
+      userId: user.id,
+      hash,
+      userAgent: req.headers["user-agent"],
+      expiresAt: addMinutes(new Date(), 2),
     });
 
-    return {
-      accessToken,
-      user: {
-        username: user.username,
-        email: user.email,
+    const refreshJwt = await this.jwtService.signAsync(
+      { sub: user.id },
+      {
+        secret: process.env.JWT_SECRET,
+        expiresIn: "2m",
       },
+    );
+
+    res.cookie("refresh_token", `${session.id}.${rawToken}`, REFRESH_OPTIONS);
+
+    res.cookie("refresh_jwt", refreshJwt, REFRESH_OPTIONS);
+
+    return {
+      accessToken: await this.createAccessToken(user.id),
     };
   }
 
@@ -83,7 +90,7 @@ export class AuthService {
     const verificationToken = uuidv4();
 
     const { password, ...userDto } = input;
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
     const passwordHash = await bcrypt.hash(password, salt);
 
     const newUser = await this.usersService.create({
@@ -112,54 +119,43 @@ export class AuthService {
     return { message: "Email verified successfully. You can now log in." };
   }
 
-  private async createRefreshToken(userId: string) {
-    const token = uuidv4();
-    const hash = await bcrypt.hash(token, 10);
+  async refreshTokens(refreshToken: string, res: Response) {
+    const [sessionId, rawToken] = refreshToken.split(".");
 
-    await this.refreshTokenService.saveRefreshToken({
-      userId,
-      hash,
-      expiresAt: addMinutes(new Date(), 2),
-    });
+    const session = await this.sessionService.findById(sessionId);
 
-    return token;
-  }
-
-  async refreshTokens(req: RequestWithUser, res: Response) {
-    const refreshToken = req.cookies?.refresh_token as string;
-
-    if (!refreshToken) {
+    if (!session) {
       throw new UnauthorizedException();
     }
 
-    const storedToken = await this.refreshTokenService.findRefreshToken(
-      refreshToken,
-      req.user.id,
+    const isValid = await bcrypt.compare(rawToken, session.hash);
+
+    if (!isValid || session.expiresAt < new Date()) {
+      throw new UnauthorizedException();
+    }
+
+    const newRawToken = uuidv4();
+    const newHash = await bcrypt.hash(newRawToken, BCRYPT_SALT_ROUNDS);
+
+    await this.sessionService.update(sessionId, {
+      hash: newHash,
+      lastUsedAt: new Date(),
+    });
+
+    res.cookie(
+      "refresh_token",
+      `${session.id}.${newRawToken}`,
+      REFRESH_OPTIONS,
     );
 
-    if (!storedToken) {
-      throw new UnauthorizedException();
-    }
+    return {
+      accessToken: await this.createAccessToken(session.userId),
+    };
+  }
 
-    const isValid = await bcrypt.compare(refreshToken, storedToken.hash);
-
-    if (!isValid || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException();
-    }
-
-    await this.refreshTokenService.deleteRefreshToken(storedToken.id);
-
-    const newRefreshToken = await this.createRefreshToken(storedToken.userId);
-
-    const accessToken = await this.jwtService.signAsync({
-      sub: storedToken.userId,
+  private async createAccessToken(userId: string) {
+    return await this.jwtService.signAsync({
+      sub: userId,
     });
-
-    res.cookie("refresh_token", newRefreshToken, {
-      ...REFRESH_COOKIE_OPTIONS,
-      maxAge: 2 * 60 * 1000,
-    });
-
-    return { accessToken };
   }
 }

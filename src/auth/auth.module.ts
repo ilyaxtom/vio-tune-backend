@@ -2,20 +2,21 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
+import { ScheduleModule } from "@nestjs/schedule";
 
 import { MailService } from "mail/services/mail.service";
 import { PrismaService } from "prisma/services/prisma.service";
 import { UserModule } from "user/user.module";
 
 import { AuthController } from "./controllers/auth.controller";
-import { AuthService, RefreshTokenService } from "./services";
-import { JwtStrategy } from "./strategies/jwt.strategy";
-import { LocalStrategy } from "./strategies/local.strategy";
+import { AuthService, SessionService } from "./services";
+import { JwtRefreshStrategy, JwtStrategy, LocalStrategy } from "./strategies";
 
 @Module({
   imports: [
     UserModule,
     PassportModule,
+    ScheduleModule.forRoot(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -30,12 +31,13 @@ import { LocalStrategy } from "./strategies/local.strategy";
   controllers: [AuthController],
   providers: [
     AuthService,
-    RefreshTokenService,
+    SessionService,
     PrismaService,
+    MailService,
+    SessionService,
     LocalStrategy,
     JwtStrategy,
-    MailService,
-    RefreshTokenService,
+    JwtRefreshStrategy,
   ],
 })
 export class AuthModule {}
