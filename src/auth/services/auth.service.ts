@@ -7,14 +7,14 @@ import { JwtService } from "@nestjs/jwt";
 import { User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { RegisterDto } from "auth/dto";
-import { RequestWithUser } from "auth/interfaces";
-import { SessionService } from "auth/services";
 import { MailService } from "mail/services/mail.service";
 import { UserService } from "user/services/user.service";
+
+import { SessionService } from "./session.service";
 
 const REFRESH_TOKEN_TTL = 2 * 60 * 1000;
 const BCRYPT_SALT_ROUNDS = 12;
@@ -43,7 +43,7 @@ export class AuthService {
       return null;
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.passwordHash!);
 
     if (!isMatch) {
       return null;
@@ -58,7 +58,7 @@ export class AuthService {
     return user;
   }
 
-  async login(user: User, req: RequestWithUser, res: Response) {
+  async login(user: User, req: Request, res: Response) {
     const rawToken = uuidv4();
     const hash = await bcrypt.hash(rawToken, BCRYPT_SALT_ROUNDS);
 

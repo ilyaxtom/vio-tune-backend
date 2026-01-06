@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "prisma/services/prisma.service";
 import { PageDto, PageMetaDto, PageOptionsDto } from "shared/dto";
-import { CreateUserDto, UpdateUserDto } from "user/dto";
+import { CreateUserDto, OAuthUserDto, UpdateUserDto } from "user/dto";
 
 @Injectable()
 export class UserService {
@@ -78,18 +78,6 @@ export class UserService {
     return user;
   }
 
-  async findByEmail(email: string) {
-    const user = await this.prismaService.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with email ${email} not found`);
-    }
-
-    return user;
-  }
-
   async findByVerificationToken(verificationToken: string) {
     const user = await this.prismaService.user.findFirst({
       where: {
@@ -130,6 +118,46 @@ export class UserService {
         isVerified: true,
         verificationToken: null,
       },
+    });
+  }
+
+  async findOrCreateOAuthUser(data: OAuthUserDto) {
+    return this.prismaService.$transaction(async (tx) => {
+      const oauthAccount = await tx.oAuthAccount.findUnique({
+        where: {
+          provider_providerId: {
+            provider: data.provider,
+            providerId: data.providerId,
+          },
+        },
+        include: { user: true },
+      });
+
+      if (oauthAccount) {
+        return oauthAccount.user;
+      }
+
+      let user = await tx.user.findUnique({ where: { email: data.email } });
+
+      if (!user) {
+        user = await tx.user.create({
+          data: {
+            email: data.email,
+            isVerified: true,
+          },
+        });
+      }
+
+      await tx.oAuthAccount.create({
+        data: {
+          provider: data.provider,
+          providerId: data.providerId,
+          email: data.email,
+          userId: user.id,
+        },
+      });
+
+      return user;
     });
   }
 }

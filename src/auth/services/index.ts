@@ -1,2 +1,3 @@
-export { AuthService } from "./auth/auth.service";
-export { SessionService } from "./session/session.service";
+export { AuthService } from "./auth.service";
+export { GoogleAuthService } from "./google-auth.service";
+export { SessionService } from "./session.service";

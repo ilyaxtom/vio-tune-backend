@@ -30,12 +30,16 @@ enum PlaylistVisibility {
   PRIVATE
 }
 
+enum OAuthProvider {
+  GOOGLE
+}
+
 model User {
   id                String   @id @default(uuid())
   firstName         String?
   lastName          String?
-  username          String   @unique
-  passwordHash      String
+  username          String?  @unique
+  passwordHash      String?
   email             String   @unique
   country           String?
   language          String?
@@ -51,8 +55,24 @@ model User {
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
   Session        Session[]
+  OAuthAccount   OAuthAccount[]
 
   @@map("users")
+}
+
+model OAuthAccount {
+  id         String        @id @default(uuid())
+  provider   OAuthProvider
+  providerId String
+  email      String?
+  userId     String
+  createdAt  DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model Artist {

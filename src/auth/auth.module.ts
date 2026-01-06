@@ -9,8 +9,13 @@ import { PrismaService } from "prisma/services/prisma.service";
 import { UserModule } from "user/user.module";
 
 import { AuthController } from "./controllers/auth.controller";
-import { AuthService, SessionService } from "./services";
-import { JwtRefreshStrategy, JwtStrategy, LocalStrategy } from "./strategies";
+import { AuthService, GoogleAuthService, SessionService } from "./services";
+import {
+  GoogleStrategy,
+  JwtRefreshStrategy,
+  JwtStrategy,
+  LocalStrategy,
+} from "./strategies";
 
 @Module({
   imports: [
@@ -35,9 +40,11 @@ import { JwtRefreshStrategy, JwtStrategy, LocalStrategy } from "./strategies";
     PrismaService,
     MailService,
     SessionService,
+    GoogleAuthService,
     LocalStrategy,
     JwtStrategy,
     JwtRefreshStrategy,
+    GoogleStrategy,
   ],
 })
 export class AuthModule {}

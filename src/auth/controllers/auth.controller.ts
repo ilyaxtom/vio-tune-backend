@@ -15,13 +15,16 @@ import { AuthGuard } from "@nestjs/passport";
 import type { Response } from "express";
 
 import { RegisterDto, VerifyEmailDto } from "auth/dto";
-import type { RequestWithUser } from "auth/interfaces/request-with-user.interface";
-import { AuthService } from "auth/services/auth/auth.service";
+import type { RequestWithOAuthProfile, RequestWithUser } from "auth/interfaces";
+import { AuthService, GoogleAuthService } from "auth/services";
 import { ResponseInterceptor } from "user/interceptors";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly googleAuthService: GoogleAuthService,
+  ) {}
 
   @Post("login")
   @UseGuards(AuthGuard("local"))
@@ -64,5 +67,20 @@ export class AuthController {
     }
 
     return this.authService.refreshTokens(refreshToken, res);
+  }
+
+  @Get("google/login")
+  @UseGuards(AuthGuard("google"))
+  googleLogin(): void {
+    // Redirect handles by passport
+  }
+
+  @Get("google/callback")
+  @UseGuards(AuthGuard("google"))
+  googleCallback(
+    @Req() req: RequestWithOAuthProfile,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.googleAuthService.login(req, res);
   }
 }
