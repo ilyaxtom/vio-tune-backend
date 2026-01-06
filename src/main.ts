@@ -23,6 +23,24 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("Vio Tune API")
     .setVersion("0.1")
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Paste you access token here",
+      },
+      "access-token",
+    )
+    .addCookieAuth(
+      "refresh_token",
+      {
+        type: "apiKey",
+        in: "cookie",
+        description: "HTTP-only refresh token cookie",
+      },
+      "refresh-token",
+    )
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);

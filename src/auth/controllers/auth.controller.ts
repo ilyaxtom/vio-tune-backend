@@ -14,10 +14,17 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import type { Response } from "express";
 
-import { RegisterDto, VerifyEmailDto } from "auth/dto";
+import { LoginDto, RegisterDto, VerifyEmailDto } from "auth/dto";
 import type { RequestWithOAuthProfile, RequestWithUser } from "auth/interfaces";
 import { AuthService, GoogleAuthService } from "auth/services";
 import { ResponseInterceptor } from "user/interceptors";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiOkResponse,
+  ApiResponse,
+} from "@nestjs/swagger";
 
 @Controller("auth")
 export class AuthController {
@@ -29,6 +36,14 @@ export class AuthController {
   @Post("login")
   @UseGuards(AuthGuard("local"))
   @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: LoginDto })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        accessToken: "jwt.access.token",
+      },
+    },
+  })
   async login(
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
@@ -39,16 +54,20 @@ export class AuthController {
   @Get("profile")
   @UseGuards(AuthGuard("jwt"))
   @UseInterceptors(ResponseInterceptor)
+  @ApiBearerAuth("access-token")
   getProfile(@Req() req: RequestWithUser) {
     return req.user;
   }
 
   @Post("register")
+  @ApiBody({ type: RegisterDto })
   async register(@Body() input: RegisterDto) {
     return this.authService.register(input);
   }
 
   @Post("verify-email")
+  @ApiCookieAuth("refresh-token")
+  @ApiBody({ type: VerifyEmailDto })
   async verifyEmail(@Body() input: VerifyEmailDto) {
     return this.authService.verifyEmail(input.token);
   }
@@ -56,6 +75,13 @@ export class AuthController {
   @Post("refresh")
   @UseGuards(AuthGuard("jwt-refresh"))
   @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({
+    schema: {
+      example: {
+        accessToken: "new_jwt.access.token",
+      },
+    },
+  })
   async refresh(
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
@@ -71,12 +97,23 @@ export class AuthController {
 
   @Get("google/login")
   @UseGuards(AuthGuard("google"))
+  @ApiResponse({
+    status: 302,
+    description: "Redirects to Google OAuth consent screen",
+  })
   googleLogin(): void {
     // Redirect handles by passport
   }
 
   @Get("google/callback")
   @UseGuards(AuthGuard("google"))
+  @ApiOkResponse({
+    schema: {
+      example: {
+        accessToken: "jwt.access.token",
+      },
+    },
+  })
   googleCallback(
     @Req() req: RequestWithOAuthProfile,
     @Res({ passthrough: true }) res: Response,
