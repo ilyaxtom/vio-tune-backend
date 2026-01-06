@@ -30,26 +30,49 @@ enum PlaylistVisibility {
   PRIVATE
 }
 
+enum OAuthProvider {
+  GOOGLE
+}
+
 model User {
-  id           String   @id @default(uuid())
-  firstName    String
-  lastName     String
-  username     String   @unique
-  passwordHash String
-  email        String   @unique
-  country      String
-  language     String
-  description  String
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(uuid())
+  firstName         String?
+  lastName          String?
+  username          String?  @unique
+  passwordHash      String?
+  email             String   @unique
+  country           String?
+  language          String?
+  description       String?
+  isVerified        Boolean  @default(false)
+  verificationToken String?
+  role              Role     @default(USER)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   playlists      Playlist[]
   likedSongs     UserLikeSong[]
   likedAlbums    UserLikeAlbum[]
   likedPlaylists UserLikePlaylist[]
+  Session        Session[]
+  OAuthAccount   OAuthAccount[]
 
   @@map("users")
+}
+
+model OAuthAccount {
+  id         String        @id @default(uuid())
+  provider   OAuthProvider
+  providerId String
+  email      String?
+  userId     String
+  createdAt  DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model Artist {
@@ -168,4 +191,20 @@ model UserLikePlaylist {
 
   @@id([userId, playlistId])
   @@map("userLikePlaylists")
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  hash       String
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
 }

@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import slugify from "slugify";
 
 import { CreateArtistDto, UpdateArtistDto } from "music/artist/dto";
-import { ArtistArtworkService } from "music/artist/services";
+import { ArtistArtworkService } from "music/artist/services/artist-artwork/artist-artwork.service";
 import { PrismaService } from "prisma/services/prisma.service";
 import { PageDto, PageMetaDto, PageOptionsDto } from "shared/dto";
 
