@@ -10,10 +10,8 @@ import {
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import { RequiredImagePipe } from "minio/pipes/required-image.pipe";
 import { FileUpload } from "music/artist/decorators/file-upload.decorator";
 import {
   ArtistResponseDto,
@@ -24,9 +22,9 @@ import {
   PaginatedResponseInterceptor,
   ResponseInterceptor,
 } from "music/artist/interceptors";
-import { ValidateArtworkPipe } from "music/artist/pipes/validate-artwork.pipe";
 import { ArtistService } from "music/artist/services";
 import { PageDto, PageOptionsDto } from "shared/dto";
+import { RequiredFilePipe, ValidateArtworkPipe } from "shared/pipes";
 
 @ApiTags("Artists")
 @Controller("artists")
@@ -62,7 +60,7 @@ export class ArtistController {
   @ApiResponse({ status: 201, description: "Artist created successfully" })
   createArtist(
     @Body() createArtistDto: CreateArtistDto,
-    @UploadedFile(RequiredImagePipe, ValidateArtworkPipe)
+    @UploadedFile(RequiredFilePipe, ValidateArtworkPipe)
     file: Express.Multer.File,
   ) {
     return this.artistService.create(createArtistDto, file);
