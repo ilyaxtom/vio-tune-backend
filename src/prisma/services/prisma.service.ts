@@ -1,10 +1,10 @@
 import {
   Injectable,
-  InternalServerErrorException,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
@@ -15,12 +15,8 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor() {
-    const databaseUrl = process.env.DATABASE_URL;
-
-    if (!databaseUrl) {
-      throw new InternalServerErrorException("Missing DATABASE_URL");
-    }
+  constructor(configService: ConfigService) {
+    const databaseUrl = configService.get("database").url;
 
     const adapter = new PrismaPg({
       connectionString: databaseUrl,

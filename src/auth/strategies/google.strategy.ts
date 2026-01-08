@@ -1,22 +1,18 @@
-import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { OAuthProvider } from "@prisma/client";
 import { Profile, Strategy } from "passport-google-oauth20";
 
-import { GoogleAuthService } from "auth/services";
-
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    @Inject(ConfigService) configService: ConfigService,
-    @Inject(GoogleAuthService)
-    private readonly googleAuthService: GoogleAuthService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
+    const googleClient = configService.get("googleClient");
+
     super({
-      clientID: configService.get("GOOGLE_CLIENT_ID") as string,
-      clientSecret: configService.get("GOOGLE_CLIENT_SECRET") as string,
-      callbackURL: configService.get("GOOGLE_CALLBACK_URL") as string,
+      clientID: googleClient.clientId,
+      clientSecret: googleClient.clientSecret,
+      callbackURL: googleClient.callbackUrl,
       scope: ["email", "profile"],
     });
   }
