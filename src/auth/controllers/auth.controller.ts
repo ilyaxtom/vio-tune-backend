@@ -12,12 +12,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import type { Response } from "express";
-
-import { LoginDto, RegisterDto, VerifyEmailDto } from "auth/dto";
-import type { RequestWithOAuthProfile, RequestWithUser } from "auth/interfaces";
-import { AuthService, GoogleAuthService } from "auth/services";
-import { ResponseInterceptor } from "user/interceptors";
 import {
   ApiBearerAuth,
   ApiBody,
@@ -25,6 +19,12 @@ import {
   ApiOkResponse,
   ApiResponse,
 } from "@nestjs/swagger";
+import type { Response } from "express";
+
+import { LoginDto, RegisterDto, VerifyEmailDto } from "auth/dto";
+import type { RequestWithOAuthProfile, RequestWithUser } from "auth/interfaces";
+import { AuthService, GoogleAuthService } from "auth/services";
+import { ResponseInterceptor } from "user/interceptors";
 
 @Controller("auth")
 export class AuthController {

@@ -4,7 +4,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import * as process from "node:process";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MinioService {
@@ -12,24 +12,25 @@ export class MinioService {
   private readonly publicEndpoint: string;
   private readonly logger = new Logger(MinioService.name);
 
-  constructor(@Inject("S3_PROVIDER") private readonly s3: S3Client) {
-    this.bucket = process.env.MINIO_BUCKET!;
-    this.publicEndpoint = process.env.MINIO_PUBLIC_ENDPOINT!;
+  constructor(
+    @Inject("S3_PROVIDER") private readonly s3: S3Client,
+    configService: ConfigService,
+  ) {
+    const { bucket, publicEndpoint } = configService.get("minio");
 
-    if (!this.bucket || !this.publicEndpoint) {
-      throw new Error("Missing required MinIO environment variables");
-    }
+    this.bucket = bucket;
+    this.publicEndpoint = publicEndpoint;
   }
 
   getPublicUrl(key: string) {
-    return `${this.publicEndpoint}/${process.env.MINIO_BUCKET}/${key}`;
+    return `${this.publicEndpoint}/${this.bucket}/${key}`;
   }
 
   async upload(key: string, body: Buffer, contentType: string) {
     try {
       await this.s3.send(
         new PutObjectCommand({
-          Bucket: process.env.MINIO_BUCKET!,
+          Bucket: this.bucket,
           Key: key,
           Body: body,
           ContentType: contentType,
@@ -45,7 +46,7 @@ export class MinioService {
     try {
       await this.s3.send(
         new DeleteObjectCommand({
-          Bucket: process.env.MINIO_BUCKET!,
+          Bucket: this.bucket,
           Key: key,
         }),
       );

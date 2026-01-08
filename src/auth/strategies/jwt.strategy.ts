@@ -12,10 +12,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
     private readonly userService: UserService,
   ) {
+    const jwt = configService.get("jwt");
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get("JWT_SECRET") as string,
+      secretOrKey: jwt.secret,
     });
   }
 

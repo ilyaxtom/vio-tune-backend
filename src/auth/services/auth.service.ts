@@ -3,38 +3,37 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { ConfigService, ConfigType } from "@nestjs/config";
+import { JwtService, JwtSignOptions } from "@nestjs/jwt";
 import { User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
-import { addMinutes } from "date-fns";
+import { addMilliseconds } from "date-fns";
 import type { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { RegisterDto } from "auth/dto";
+import authConfig from "config/auth.config";
+import jwtConfig from "config/jwt.config";
 import { MailService } from "mail/services/mail.service";
 import { UserService } from "user/services/user.service";
 
 import { SessionService } from "./session.service";
 
-const REFRESH_TOKEN_TTL = 2 * 60 * 1000;
-const BCRYPT_SALT_ROUNDS = 12;
-
-const REFRESH_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  path: "/",
-  maxAge: REFRESH_TOKEN_TTL,
-};
-
 @Injectable()
 export class AuthService {
+  private readonly auth: ConfigType<typeof authConfig>;
+  private readonly jwt: ConfigType<typeof jwtConfig>;
+
   constructor(
     private readonly usersService: UserService,
     private readonly sessionService: SessionService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    this.auth = configService.get("auth")!;
+    this.jwt = configService.get("jwt")!;
+  }
 
   async validateUser(username: string, password: string) {
     const user = await this.usersService.findByUsername(username);
@@ -60,26 +59,26 @@ export class AuthService {
 
   async login(user: User, req: Request, res: Response) {
     const rawToken = uuidv4();
-    const hash = await bcrypt.hash(rawToken, BCRYPT_SALT_ROUNDS);
+    const hash = await bcrypt.hash(rawToken, this.auth.bcryptSaltRounds);
 
     const session = await this.sessionService.save({
       userId: user.id,
       hash,
       userAgent: req.headers["user-agent"],
-      expiresAt: addMinutes(new Date(), 2),
+      expiresAt: addMilliseconds(new Date(), this.auth.refreshToken.ttlMs),
     });
 
-    const refreshJwt = await this.jwtService.signAsync(
-      { sub: user.id },
-      {
-        secret: process.env.JWT_SECRET,
-        expiresIn: "2m",
-      },
-    );
+    const refreshJwt = await this.jwtService.signAsync({ sub: user.id }, {
+      secret: this.jwt.secret,
+      expiresIn: this.auth.refreshToken.expiresIn,
+    } as JwtSignOptions);
 
-    res.cookie("refresh_token", `${session.id}.${rawToken}`, REFRESH_OPTIONS);
+    res.cookie("refresh_token", `${session.id}.${rawToken}`, {
+      ...this.auth.refreshToken.cookie,
+      maxAge: this.auth.refreshToken.ttlMs,
+    });
 
-    res.cookie("refresh_jwt", refreshJwt, REFRESH_OPTIONS);
+    res.cookie("refresh_jwt", refreshJwt, this.auth.refreshToken.cookie);
 
     return {
       accessToken: await this.createAccessToken(user.id),
@@ -90,7 +89,7 @@ export class AuthService {
     const verificationToken = uuidv4();
 
     const { password, ...userDto } = input;
-    const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
+    const salt = await bcrypt.genSalt(this.auth.bcryptSaltRounds);
     const passwordHash = await bcrypt.hash(password, salt);
 
     const newUser = await this.usersService.create({
@@ -135,7 +134,7 @@ export class AuthService {
     }
 
     const newRawToken = uuidv4();
-    const newHash = await bcrypt.hash(newRawToken, BCRYPT_SALT_ROUNDS);
+    const newHash = await bcrypt.hash(newRawToken, this.auth.bcryptSaltRounds);
 
     await this.sessionService.update(sessionId, {
       hash: newHash,
@@ -145,7 +144,7 @@ export class AuthService {
     res.cookie(
       "refresh_token",
       `${session.id}.${newRawToken}`,
-      REFRESH_OPTIONS,
+      this.auth.refreshToken.cookie,
     );
 
     return {

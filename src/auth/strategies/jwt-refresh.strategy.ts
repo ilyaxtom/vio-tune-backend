@@ -12,12 +12,14 @@ export class JwtRefreshStrategy extends PassportStrategy(
   "jwt-refresh",
 ) {
   constructor(private readonly configService: ConfigService) {
+    const jwt = configService.get("jwt");
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => req.cookies?.refresh_jwt as string,
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get("JWT_SECRET") as string,
+      secretOrKey: jwt.secret,
     });
   }
 

@@ -1,4 +1,5 @@
 import { ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
@@ -8,6 +9,8 @@ import { PrismaClientExceptionFilter } from "./prisma/filters/prisma-client-exce
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({
@@ -46,6 +49,8 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, documentFactory);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = configService.get("app.port") as number;
+
+  await app.listen(port);
 }
 bootstrap();

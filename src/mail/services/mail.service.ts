@@ -11,11 +11,14 @@ import { MailOptions } from "mail/interfaces/mail-options.interface";
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private readonly frontendUrl: string;
 
   constructor(
     private readonly mailerService: MailerService,
-    private readonly configService: ConfigService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    this.frontendUrl = configService.get("mail").frontentUrl;
+  }
 
   private async sendMail(options: MailOptions) {
     try {
@@ -27,7 +30,7 @@ export class MailService {
   }
 
   async sendVerificationEmail(to: string, verificationToken: string) {
-    const verificationUrl = `${this.configService.get("FRONTEND_URL")}/api/auth/verify?token=${verificationToken};`;
+    const verificationUrl = `${this.frontendUrl}/api/auth/verify?token=${verificationToken};`;
 
     await this.sendMail({
       to,
