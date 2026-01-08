@@ -25,12 +25,16 @@ import {
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get("JWT_SECRET"),
-        signOptions: {
-          expiresIn: "1m",
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const jwt = configService.get("jwt");
+
+        return {
+          secret: jwt.secret,
+          signOptions: {
+            expiresIn: jwt.expiresIn,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

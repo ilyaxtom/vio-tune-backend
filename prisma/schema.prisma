@@ -93,7 +93,7 @@ model Album {
   id          String    @id @default(uuid())
   artistId    String
   title       String
-  slug        String?
+  slug        String?   @unique
   releaseDate DateTime
   artwork     String
   copyright   String

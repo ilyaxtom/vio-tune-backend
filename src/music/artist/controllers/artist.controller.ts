@@ -57,7 +57,7 @@ export class ArtistController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor("artwork"), ResponseInterceptor)
+  @UseInterceptors(ResponseInterceptor)
   @FileUpload("artwork")
   @ApiResponse({ status: 201, description: "Artist created successfully" })
   createArtist(

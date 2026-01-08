@@ -9,5 +9,6 @@ export default registerAs("minio", () => ({
   accessKey: process.env.MINIO_ACCESS_KEY,
   secretKey: process.env.MINIO_SECRET_KEY,
   useSSL: process.env.MINIO_USE_SSL,
+  protocol: process.env.MINIO_USE_SSL === "true" ? "https" : "http",
   region: process.env.MINIO_REGION,
 }));

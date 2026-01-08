@@ -17,7 +17,6 @@ export class MinioService {
     configService: ConfigService,
   ) {
     const { bucket, publicEndpoint } = configService.get("minio");
-
     this.bucket = bucket;
     this.publicEndpoint = publicEndpoint;
   }

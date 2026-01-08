@@ -49,8 +49,10 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, documentFactory);
 
-  const port = configService.get("app.port") as number;
+  const { port } = configService.get("app");
 
-  await app.listen(port);
+  await app.listen(port as number, () => {
+    console.log(`Listening on port ${port}`);
+  });
 }
 bootstrap();

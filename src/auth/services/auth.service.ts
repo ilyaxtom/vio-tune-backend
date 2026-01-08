@@ -153,8 +153,13 @@ export class AuthService {
   }
 
   private async createAccessToken(userId: string) {
-    return await this.jwtService.signAsync({
-      sub: userId,
-    });
+    return await this.jwtService.signAsync(
+      {
+        sub: userId,
+      },
+      {
+        secret: this.jwt.secret,
+      } as JwtSignOptions,
+    );
   }
 }
