@@ -1,6 +1,6 @@
-import { Exclude, Expose } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 import { AlbumType } from "@prisma/client";
+import { Exclude, Expose } from "class-transformer";
 
 export class AlbumResponseDto {
   @Exclude()
