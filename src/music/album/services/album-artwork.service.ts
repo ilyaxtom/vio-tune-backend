@@ -4,16 +4,17 @@ import { MinioService } from "minio/services/minio.service";
 import { slugify } from "shared/utils/slugify";
 
 @Injectable()
-export class ArtistArtworkService {
+export class AlbumArtworkService {
   constructor(private readonly minioService: MinioService) {}
 
   async upload(name: string, artwork: Express.Multer.File) {
-    const fileName = slugify(name);
-    const key = `artists/artworks/${fileName}`;
+    const albumSlug = slugify(name);
+    const url = `albums/${albumSlug}`;
+    const key = `${url}/artwork/${albumSlug}`;
 
     await this.minioService.upload(key, artwork.buffer, artwork.mimetype);
 
-    return key;
+    return { url, key };
   }
 
   async delete(key: string) {
