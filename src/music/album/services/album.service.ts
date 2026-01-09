@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { CreateAlbumDto, UpdateAlbumDto } from "music/album/dto";
@@ -10,6 +10,8 @@ import { AlbumArtworkService } from "./album-artwork.service";
 
 @Injectable()
 export class AlbumService {
+  private readonly logger = new Logger(AlbumService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly albumArtworkService: AlbumArtworkService,
@@ -72,7 +74,7 @@ export class AlbumService {
       }),
       dto.genre
         ? this.prismaService.genre.findUnique({
-            where: { name: dto.genre ?? "" },
+            where: { name: dto.genre },
           })
         : null,
     ]);
@@ -87,26 +89,34 @@ export class AlbumService {
 
     const slug = slugify(dto.title);
 
-    const key = await this.albumArtworkService.upload(dto.title, artwork);
+    const { key, url } = await this.albumArtworkService.upload(
+      dto.title,
+      artwork,
+    );
 
-    return await this.prismaService.album.create({
-      data: {
-        title: dto.title,
-        slug,
-        releaseDate: new Date(dto.releaseDate),
-        artwork: key,
-        url: "#",
-        artistId: artist.id,
-        genreId: genre?.id,
-        copyright: dto.copyright,
-        type: dto.type,
-        recordLabel: dto.recordLabel,
-      },
-      include: {
-        artist: true,
-        genre: true,
-      },
-    });
+    try {
+      return await this.prismaService.album.create({
+        data: {
+          title: dto.title,
+          slug,
+          releaseDate: new Date(dto.releaseDate),
+          artwork: key,
+          url,
+          artistId: artist.id,
+          genreId: genre?.id,
+          copyright: dto.copyright,
+          type: dto.type,
+          recordLabel: dto.recordLabel,
+        },
+        include: {
+          artist: true,
+          genre: true,
+        },
+      });
+    } catch (error) {
+      await this.albumArtworkService.delete(key);
+      throw error;
+    }
   }
 
   async update(
@@ -116,28 +126,50 @@ export class AlbumService {
   ) {
     const album = await this.getAlbumOrFail(slug);
 
-    const updates = { ...dto };
+    let newArtworkKey: string | undefined;
+    const oldArtworkKey = album.artwork;
+
+    const updateData: Prisma.AlbumUpdateInput = {
+      title: dto.title,
+      copyright: dto.copyright,
+      type: dto.type,
+      recordLabel: dto.recordLabel,
+      releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : undefined,
+    };
 
     if (artwork) {
-      const key = await this.albumArtworkService.upload(
+      const { key } = await this.albumArtworkService.upload(
         dto.title || album.title,
         artwork,
       );
-
-      Object.assign(updates, { artwork: key });
-
-      await this.albumArtworkService.delete(album.artwork);
+      newArtworkKey = key;
+      updateData.artwork = key;
     }
 
-    if (updates.releaseDate) {
-      Object.assign(updates, { releaseDate: new Date(updates.releaseDate) });
-    }
+    try {
+      const updatedAlbum = await this.prismaService.album.update({
+        where: { slug },
+        data: updateData,
+        include: { artist: true, genre: true },
+      });
 
-    return this.prismaService.album.update({
-      where: { slug },
-      data: updates,
-      include: { artist: true, genre: true },
-    });
+      if (newArtworkKey && oldArtworkKey) {
+        await this.albumArtworkService.delete(oldArtworkKey).catch((err) => {
+          this.logger.error(
+            `Failed to cleanup old artwork: ${oldArtworkKey}`,
+            err,
+          );
+        });
+      }
+
+      return updatedAlbum;
+    } catch (error) {
+      if (newArtworkKey) {
+        await this.albumArtworkService.delete(newArtworkKey);
+      }
+
+      throw error;
+    }
   }
 
   async delete(slug: string) {

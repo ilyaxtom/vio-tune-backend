@@ -9,11 +9,12 @@ export class AlbumArtworkService {
 
   async upload(name: string, artwork: Express.Multer.File) {
     const albumSlug = slugify(name);
-    const key = `albums/${albumSlug}/artwork/${albumSlug}`;
+    const url = `albums/${albumSlug}`;
+    const key = `${url}/artwork/${albumSlug}`;
 
     await this.minioService.upload(key, artwork.buffer, artwork.mimetype);
 
-    return key;
+    return { url, key };
   }
 
   async delete(key: string) {
