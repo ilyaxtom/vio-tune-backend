@@ -39,4 +39,12 @@ export class AlbumResponseDto {
   @Expose()
   @ApiProperty({ example: "the-nothing-lkafj2" })
   slug: string;
+
+  @Expose()
+  @ApiProperty({ example: "Korn" })
+  artist: string;
+
+  @Expose()
+  @ApiProperty({ example: "Nu Metal" })
+  genre: string;
 }

@@ -18,6 +18,7 @@ export class AlbumService {
   private async getAlbumOrFail(slug: string) {
     const album = await this.prismaService.album.findUnique({
       where: { slug },
+      include: { artist: true, genre: true },
     });
 
     if (!album) {
@@ -47,6 +48,10 @@ export class AlbumService {
         orderBy: {
           title: order,
         },
+        include: {
+          artist: true,
+          genre: true,
+        },
       }),
       this.prismaService.album.count({ where }),
     ]);
@@ -60,38 +65,62 @@ export class AlbumService {
     return await this.getAlbumOrFail(slug);
   }
 
-  async create(createAlbumDto: CreateAlbumDto, artwork: Express.Multer.File) {
-    const slug = slugify(createAlbumDto.title);
+  async create(dto: CreateAlbumDto, artwork: Express.Multer.File) {
+    const [artist, genre] = await Promise.all([
+      this.prismaService.artist.findUnique({
+        where: { slug: dto.artist },
+      }),
+      dto.genre
+        ? this.prismaService.genre.findUnique({
+            where: { name: dto.genre ?? "" },
+          })
+        : null,
+    ]);
 
-    const key = await this.albumArtworkService.upload(
-      createAlbumDto.title,
-      artwork,
-    );
+    if (!artist) {
+      throw new NotFoundException("Artist not found");
+    }
+
+    if (dto.genre && !genre) {
+      throw new NotFoundException("Genre not found");
+    }
+
+    const slug = slugify(dto.title);
+
+    const key = await this.albumArtworkService.upload(dto.title, artwork);
 
     return await this.prismaService.album.create({
       data: {
-        ...createAlbumDto,
-        releaseDate: new Date(createAlbumDto.releaseDate),
+        title: dto.title,
         slug,
+        releaseDate: new Date(dto.releaseDate),
         artwork: key,
         url: "#",
-        artistId: "7b62c939-56fa-44b0-a962-3ee3a77115f6",
+        artistId: artist.id,
+        genreId: genre?.id,
+        copyright: dto.copyright,
+        type: dto.type,
+        recordLabel: dto.recordLabel,
+      },
+      include: {
+        artist: true,
+        genre: true,
       },
     });
   }
 
   async update(
     slug: string,
-    updateAlbumDto: UpdateAlbumDto,
+    dto: UpdateAlbumDto,
     artwork: Express.Multer.File,
   ) {
     const album = await this.getAlbumOrFail(slug);
 
-    const updates = { ...updateAlbumDto };
+    const updates = { ...dto };
 
     if (artwork) {
       const key = await this.albumArtworkService.upload(
-        updateAlbumDto.title || album.title,
+        dto.title || album.title,
         artwork,
       );
 
@@ -104,7 +133,11 @@ export class AlbumService {
       Object.assign(updates, { releaseDate: new Date(updates.releaseDate) });
     }
 
-    return this.prismaService.album.update({ where: { slug }, data: updates });
+    return this.prismaService.album.update({
+      where: { slug },
+      data: updates,
+      include: { artist: true, genre: true },
+    });
   }
 
   async delete(slug: string) {
@@ -112,6 +145,9 @@ export class AlbumService {
 
     await this.albumArtworkService.delete(album.artwork);
 
-    return this.prismaService.album.delete({ where: { slug } });
+    return this.prismaService.album.delete({
+      where: { slug },
+      include: { artist: true, genre: true },
+    });
   }
 }

@@ -1,6 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { AlbumType } from "@prisma/client";
-import { IsDateString, IsEnum, IsNotEmpty, IsString } from "class-validator";
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class CreateAlbumDto {
   @IsNotEmpty()
@@ -12,6 +18,16 @@ export class CreateAlbumDto {
   @IsDateString()
   @ApiProperty()
   releaseDate: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ description: "Artist slug", example: "korn-lsk2d2" })
+  artist: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: "Nu Metal" })
+  genre?: string;
 
   @IsNotEmpty()
   @IsString()

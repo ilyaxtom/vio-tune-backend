@@ -4,12 +4,12 @@ import {
   Injectable,
   NestInterceptor,
 } from "@nestjs/common";
-import { Album } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
 import { map, Observable } from "rxjs";
 
 import { MinioService } from "minio/services/minio.service";
 import { AlbumResponseDto } from "music/album/dto";
+import { AlbumWithArtistGenre } from "music/album/interfaces/album-with-artist.interface";
 
 @Injectable()
 export class AlbumResponseInterceptor implements NestInterceptor {
@@ -17,13 +17,15 @@ export class AlbumResponseInterceptor implements NestInterceptor {
 
   intercept(
     context: ExecutionContext,
-    next: CallHandler<Album>,
+    next: CallHandler<AlbumWithArtistGenre>,
   ): Observable<AlbumResponseDto> {
     return next.handle().pipe(
       map((data) => {
         const transformed = {
           ...data,
           artwork: this.minioService.getPublicUrl(data.artwork),
+          artist: data.artist.name,
+          genre: data.genre?.name,
         };
 
         return plainToInstance(AlbumResponseDto, transformed, {
