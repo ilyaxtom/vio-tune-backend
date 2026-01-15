@@ -47,6 +47,19 @@ export class PlaylistService {
     });
   }
 
+  getPlaylistById(id: string) {
+    return this.prismaService.playlist.findUnique({
+      where: { id },
+      include: {
+        playlistItem: {
+          include: {
+            song: true,
+          },
+        },
+      },
+    });
+  }
+
   create(dto: CreatePlaylistDto, userId: string) {
     const slug = slugify(dto.title);
 
