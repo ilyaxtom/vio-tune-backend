@@ -11,6 +11,8 @@ import googleClientConfig from "./config/google-client.config";
 import jwtConfig from "./config/jwt.config";
 import mailConfig from "./config/mail.config";
 import minioConfig from "./config/minio.config";
+import { LibraryModule } from "./library/library.module";
+import { PlaylistModule } from "./library/playlist/playlist.module";
 import { MailModule } from "./mail/mail.module";
 import { MinioModule } from "./minio/minio.module";
 import { MusicModule } from "./music/music.module";
@@ -39,6 +41,8 @@ import { UserModule } from "./user/user.module";
     UserModule,
     AuthModule,
     MailModule,
+    PlaylistModule,
+    LibraryModule,
   ],
   controllers: [],
   providers: [],
