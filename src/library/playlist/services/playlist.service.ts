@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma, Role as UserRole, User } from "@prisma/client";
+import { Playlist, Prisma, Role as UserRole, User } from "@prisma/client";
 
 import { CreatePlaylistDto, UpdatePlaylistDto } from "library/playlist/dto";
 import { PrismaService } from "prisma/services/prisma.service";
@@ -26,7 +26,16 @@ export class PlaylistService {
     return playlist;
   }
 
-  async getPlaylists(pageOptions: PageOptionsDto) {
+  private canModify(user: User, playlist: Playlist) {
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isOwner = user.id === playlist.userId;
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
+  }
+
+  async findAll(pageOptions: PageOptionsDto) {
     const { page, limit, search, order } = pageOptions;
 
     const where = search
@@ -55,7 +64,7 @@ export class PlaylistService {
     return new PageDto(items, pageMeta);
   }
 
-  async getUserPlaylists(userId: string) {
+  async findByUser(userId: string) {
     return this.prismaService.playlist.findMany({
       where: {
         userId,
@@ -63,8 +72,8 @@ export class PlaylistService {
     });
   }
 
-  getPlaylistById(id: string) {
-    return this.prismaService.playlist.findUnique({
+  async findById(id: string) {
+    const playlist = await this.prismaService.playlist.findUnique({
       where: { id },
       include: {
         playlistItem: {
@@ -74,6 +83,12 @@ export class PlaylistService {
         },
       },
     });
+
+    if (!playlist) {
+      throw new NotFoundException(`Playlist with id ${id} not found`);
+    }
+
+    return playlist;
   }
 
   create(dto: CreatePlaylistDto, userId: string) {
@@ -91,32 +106,21 @@ export class PlaylistService {
   async update(id: string, user: User, dto: UpdatePlaylistDto) {
     const playlist = await this.getPlaylistOrFail(id);
 
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isOwner = user.id === playlist.userId;
-
-    if (!isAdmin && !isOwner) {
-      throw new ForbiddenException(
-        "You don't have permission to update this playlist",
-      );
-    }
+    this.canModify(user, playlist);
 
     return this.prismaService.playlist.update({
       where: { id: playlist.id },
-      data: dto,
+      data: {
+        title: dto.title,
+        visibility: dto.visibility,
+      },
     });
   }
 
   async delete(id: string, user: User) {
     const playlist = await this.getPlaylistOrFail(id);
 
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isOwner = user.id === playlist.userId;
-
-    if (!isAdmin && !isOwner) {
-      throw new ForbiddenException(
-        "You don't have permission to delete this playlist",
-      );
-    }
+    this.canModify(user, playlist);
 
     return this.prismaService.playlist.delete({
       where: { id: playlist.id },

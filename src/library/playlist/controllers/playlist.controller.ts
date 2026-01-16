@@ -6,14 +6,14 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  UseGuards,
+  Query,
   UseInterceptors,
 } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiTags } from "@nestjs/swagger";
+import type { User } from "@prisma/client";
 
-import type { RequestWithUser } from "auth/interfaces";
+import { Authenticated } from "auth/decorators";
+import { CurrentUser } from "auth/decorators/current-user.decorator";
 import {
   AddItemDto,
   CreatePlaylistDto,
@@ -35,72 +35,61 @@ export class PlaylistController {
   ) {}
 
   @Get()
-  getPlaylists(@Body() pageOptions: PageOptionsDto) {
-    return this.playlistService.getPlaylists(pageOptions);
+  getPlaylists(@Query() pageOptions: PageOptionsDto) {
+    return this.playlistService.findAll(pageOptions);
   }
 
   @Get("me")
-  @UseGuards(AuthGuard("jwt"))
-  getUserPlaylists(@Req() req: RequestWithUser) {
-    return this.playlistService.getUserPlaylists(req.user.id);
+  @Authenticated()
+  getUserPlaylists(@CurrentUser() user: User) {
+    return this.playlistService.findByUser(user.id);
   }
 
   @Get(":id")
   @UseInterceptors(PlaylistResponseInterceptor)
   getPlaylist(@Param("id") id: string) {
-    return this.playlistService.getPlaylistById(id);
+    return this.playlistService.findById(id);
   }
 
   @Post()
-  @UseGuards(AuthGuard("jwt"))
-  @ApiBearerAuth("access-token")
-  createPlaylist(@Body() dto: CreatePlaylistDto, @Req() req: RequestWithUser) {
-    return this.playlistService.create(dto, req.user.id);
+  @Authenticated()
+  createPlaylist(@Body() dto: CreatePlaylistDto, @CurrentUser() user: User) {
+    return this.playlistService.create(dto, user.id);
   }
 
   @Post(":id/songs")
-  @UseGuards(AuthGuard("jwt"))
-  @ApiBearerAuth("access-token")
+  @Authenticated()
   addItemToPlaylist(
     @Body() dto: AddItemDto,
     @Param("id") playlistId: string,
-    @Req() req: RequestWithUser,
+    @CurrentUser() user: User,
   ) {
-    return this.playlistItemService.addItemToPlaylist(
-      dto,
-      playlistId,
-      req.user,
-    );
+    return this.playlistItemService.addItemToPlaylist(dto, playlistId, user);
   }
 
   @Patch(":id")
-  @UseGuards(AuthGuard("jwt"))
-  @ApiBearerAuth("access-token")
+  @Authenticated()
   updatePlaylist(
     @Body() dto: UpdatePlaylistDto,
     @Param("id") playlistId: string,
-    @Req() req: RequestWithUser,
+    @CurrentUser() user: User,
   ) {
-    return this.playlistService.update(playlistId, req.user, dto);
+    return this.playlistService.update(playlistId, user, dto);
   }
 
   @Delete(":id")
-  @UseGuards(AuthGuard("jwt"))
-  @ApiBearerAuth("access-token")
-  removePlaylist(@Param("id") playlistId: string, @Req() req: RequestWithUser) {
-    return this.playlistService.delete(playlistId, req.user);
+  @Authenticated()
+  removePlaylist(@Param("id") playlistId: string, @CurrentUser() user: User) {
+    return this.playlistService.delete(playlistId, user);
   }
 
   @Delete(":id/songs/:songId")
+  @Authenticated()
   removeItemFromPlaylist(
     @Param("id") id: string,
     @Param("songId") songId: string,
-    @Req() req: RequestWithUser,
+    @CurrentUser() user: User,
   ) {
-    return this.playlistItemService.removeItemFromPlaylist(
-      id,
-      songId,
-      req.user,
-    );
+    return this.playlistItemService.removeItemFromPlaylist(id, songId, user);
   }
 }

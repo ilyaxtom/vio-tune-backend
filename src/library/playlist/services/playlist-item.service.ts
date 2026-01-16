@@ -2,8 +2,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from "@nestjs/common";
-import { Role as UserRole, User } from "@prisma/client";
+import { Playlist, Role as UserRole, User } from "@prisma/client";
 
 import { AddItemDto } from "library/playlist/dto/add-item.dto";
 import { PrismaService } from "prisma/services/prisma.service";
@@ -12,67 +13,74 @@ import { PrismaService } from "prisma/services/prisma.service";
 export class PlaylistItemService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  private async getPlaylistOrFail(id: string) {
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: { id },
+    });
+
+    if (!playlist) {
+      throw new NotFoundException("Playlist not found");
+    }
+
+    return playlist;
+  }
+
+  private async getSongOrFail(id: string) {
+    const song = await this.prismaService.song.findUnique({ where: { id } });
+
+    if (!song) {
+      throw new NotFoundException("Song not found");
+    }
+
+    return song;
+  }
+
+  private canModify(user: User, playlist: Playlist) {
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isOwner = user.id === playlist.userId;
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException("Insufficient permissions");
+    }
+  }
+
   async addItemToPlaylist(
     { songId }: AddItemDto,
     playlistId: string,
     user: User,
   ) {
-    const [playlist, song] = await this.prismaService.$transaction([
-      this.prismaService.playlist.findUnique({ where: { id: playlistId } }),
-      this.prismaService.song.findUnique({ where: { id: songId } }),
-    ]);
+    const playlist = await this.getPlaylistOrFail(playlistId);
 
-    if (!playlist) {
-      throw new BadRequestException("Playlist not found");
-    }
+    this.canModify(user, playlist);
 
-    if (!song) {
-      throw new BadRequestException("Song not found");
-    }
-
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isOwner = user.id === playlist.userId;
-
-    if (!isAdmin && !isOwner) {
-      throw new ForbiddenException(
-        "You don't have permission to add item to this playlist",
-      );
-    }
+    const song = await this.getSongOrFail(songId);
 
     await this.prismaService.playlistItem.create({
       data: { playlistId, songId },
     });
 
-    return `${song.title} added to ${playlist.title} playlist`;
+    return { message: `${song.title} added to ${playlist.title} playlist` };
   }
 
   async removeItemFromPlaylist(playlistId: string, songId: string, user: User) {
-    const [playlist, song] = await this.prismaService.$transaction([
-      this.prismaService.playlist.findUnique({ where: { id: playlistId } }),
-      this.prismaService.song.findUnique({ where: { id: songId } }),
-    ]);
+    const playlist = await this.getPlaylistOrFail(playlistId);
 
-    if (!playlist) {
-      throw new BadRequestException("Playlist not found");
-    }
+    this.canModify(user, playlist);
 
-    if (!song) {
-      throw new BadRequestException("Song not found");
-    }
+    await this.getSongOrFail(songId);
 
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isOwner = user.id === playlist.userId;
+    const item = await this.prismaService.playlistItem.findUnique({
+      where: { playlistId_songId: { playlistId, songId } },
+    });
 
-    if (!isAdmin && !isOwner) {
-      throw new ForbiddenException(
-        "You don't have permission to delete item from this playlist",
-      );
+    if (!item) {
+      throw new BadRequestException("Song is not in playlist");
     }
 
     await this.prismaService.playlistItem.delete({
       where: { playlistId_songId: { playlistId, songId } },
     });
 
-    return "Song removed from playlist";
+    return { message: "Song removed from playlist" };
   }
 }
