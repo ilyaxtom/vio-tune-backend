@@ -1,7 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { Prisma, Role as UserRole, User } from "@prisma/client";
 
-import { CreatePlaylistDto } from "library/playlist/dto/create-playlist.dto";
+import { CreatePlaylistDto, UpdatePlaylistDto } from "library/playlist/dto";
 import { PrismaService } from "prisma/services/prisma.service";
 import { PageDto, PageMetaDto, PageOptionsDto } from "shared/dto";
 import { slugify } from "shared/utils/slugify";
@@ -9,6 +13,18 @@ import { slugify } from "shared/utils/slugify";
 @Injectable()
 export class PlaylistService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  private async getPlaylistOrFail(id: string) {
+    const playlist = await this.prismaService.playlist.findUnique({
+      where: { id },
+    });
+
+    if (!playlist) {
+      throw new NotFoundException(`Playlist with id ${id} not found`);
+    }
+
+    return playlist;
+  }
 
   async getPlaylists(pageOptions: PageOptionsDto) {
     const { page, limit, search, order } = pageOptions;
@@ -69,6 +85,41 @@ export class PlaylistService {
         userId,
         slug,
       },
+    });
+  }
+
+  async update(id: string, user: User, dto: UpdatePlaylistDto) {
+    const playlist = await this.getPlaylistOrFail(id);
+
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isOwner = user.id === playlist.userId;
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        "You don't have permission to update this playlist",
+      );
+    }
+
+    return this.prismaService.playlist.update({
+      where: { id: playlist.id },
+      data: dto,
+    });
+  }
+
+  async delete(id: string, user: User) {
+    const playlist = await this.getPlaylistOrFail(id);
+
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isOwner = user.id === playlist.userId;
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        "You don't have permission to delete this playlist",
+      );
+    }
+
+    return this.prismaService.playlist.delete({
+      where: { id: playlist.id },
     });
   }
 }

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -13,8 +14,11 @@ import { AuthGuard } from "@nestjs/passport";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import type { RequestWithUser } from "auth/interfaces";
-import { AddItemDto } from "library/playlist/dto/add-item.dto";
-import { CreatePlaylistDto } from "library/playlist/dto/create-playlist.dto";
+import {
+  AddItemDto,
+  CreatePlaylistDto,
+  UpdatePlaylistDto,
+} from "library/playlist/dto";
 import { PlaylistResponseInterceptor } from "library/playlist/interceptors/playlist-response.interceptor";
 import {
   PlaylistItemService,
@@ -65,15 +69,38 @@ export class PlaylistController {
     return this.playlistItemService.addItemToPlaylist(
       dto,
       playlistId,
-      req.user.id,
+      req.user,
     );
+  }
+
+  @Patch(":id")
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth("access-token")
+  updatePlaylist(
+    @Body() dto: UpdatePlaylistDto,
+    @Param("id") playlistId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.playlistService.update(playlistId, req.user, dto);
+  }
+
+  @Delete(":id")
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth("access-token")
+  removePlaylist(@Param("id") playlistId: string, @Req() req: RequestWithUser) {
+    return this.playlistService.delete(playlistId, req.user);
   }
 
   @Delete(":id/songs/:songId")
   removeItemFromPlaylist(
     @Param("id") id: string,
     @Param("songId") songId: string,
+    @Req() req: RequestWithUser,
   ) {
-    return this.playlistItemService.removeItemFromPlaylist(id, songId);
+    return this.playlistItemService.removeItemFromPlaylist(
+      id,
+      songId,
+      req.user,
+    );
   }
 }
