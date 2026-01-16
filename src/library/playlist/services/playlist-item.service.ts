@@ -13,9 +13,9 @@ import { PrismaService } from "prisma/services/prisma.service";
 export class PlaylistItemService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  private async getPlaylistOrFail(id: string) {
+  private async getPlaylistOrFail(slug: string) {
     const playlist = await this.prismaService.playlist.findUnique({
-      where: { id },
+      where: { slug },
     });
 
     if (!playlist) {
@@ -44,33 +44,29 @@ export class PlaylistItemService {
     }
   }
 
-  async addItemToPlaylist(
-    { songId }: AddItemDto,
-    playlistId: string,
-    user: User,
-  ) {
-    const playlist = await this.getPlaylistOrFail(playlistId);
+  async addItemToPlaylist({ songId }: AddItemDto, slug: string, user: User) {
+    const playlist = await this.getPlaylistOrFail(slug);
 
     this.canModify(user, playlist);
 
     const song = await this.getSongOrFail(songId);
 
     await this.prismaService.playlistItem.create({
-      data: { playlistId, songId },
+      data: { playlistId: playlist.id, songId },
     });
 
     return { message: `${song.title} added to ${playlist.title} playlist` };
   }
 
-  async removeItemFromPlaylist(playlistId: string, songId: string, user: User) {
-    const playlist = await this.getPlaylistOrFail(playlistId);
+  async removeItemFromPlaylist(slug: string, songId: string, user: User) {
+    const playlist = await this.getPlaylistOrFail(slug);
 
     this.canModify(user, playlist);
 
     await this.getSongOrFail(songId);
 
     const item = await this.prismaService.playlistItem.findUnique({
-      where: { playlistId_songId: { playlistId, songId } },
+      where: { playlistId_songId: { playlistId: playlist.id, songId } },
     });
 
     if (!item) {
@@ -78,7 +74,7 @@ export class PlaylistItemService {
     }
 
     await this.prismaService.playlistItem.delete({
-      where: { playlistId_songId: { playlistId, songId } },
+      where: { playlistId_songId: { playlistId: playlist.id, songId } },
     });
 
     return { message: "Song removed from playlist" };

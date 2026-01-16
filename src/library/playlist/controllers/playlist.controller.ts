@@ -45,10 +45,10 @@ export class PlaylistController {
     return this.playlistService.findByUser(user.id);
   }
 
-  @Get(":id")
+  @Get(":slug")
   @UseInterceptors(PlaylistResponseInterceptor)
-  getPlaylist(@Param("id") id: string) {
-    return this.playlistService.findById(id);
+  getPlaylist(@Param("slug") slug: string) {
+    return this.playlistService.findBySlug(slug);
   }
 
   @Post()
@@ -57,39 +57,39 @@ export class PlaylistController {
     return this.playlistService.create(dto, user.id);
   }
 
-  @Post(":id/songs")
+  @Post(":slug/songs")
   @Authenticated()
   addItemToPlaylist(
     @Body() dto: AddItemDto,
-    @Param("id") playlistId: string,
+    @Param("slug") slug: string,
     @CurrentUser() user: User,
   ) {
-    return this.playlistItemService.addItemToPlaylist(dto, playlistId, user);
+    return this.playlistItemService.addItemToPlaylist(dto, slug, user);
   }
 
-  @Patch(":id")
+  @Patch(":slug")
   @Authenticated()
   updatePlaylist(
     @Body() dto: UpdatePlaylistDto,
-    @Param("id") playlistId: string,
+    @Param("slug") slug: string,
     @CurrentUser() user: User,
   ) {
-    return this.playlistService.update(playlistId, user, dto);
+    return this.playlistService.update(slug, user, dto);
   }
 
-  @Delete(":id")
+  @Delete(":slug")
   @Authenticated()
-  removePlaylist(@Param("id") playlistId: string, @CurrentUser() user: User) {
-    return this.playlistService.delete(playlistId, user);
+  removePlaylist(@Param("slug") slug: string, @CurrentUser() user: User) {
+    return this.playlistService.delete(slug, user);
   }
 
-  @Delete(":id/songs/:songId")
+  @Delete(":slug/songs/:songId")
   @Authenticated()
   removeItemFromPlaylist(
-    @Param("id") id: string,
+    @Param("slug") slug: string,
     @Param("songId") songId: string,
     @CurrentUser() user: User,
   ) {
-    return this.playlistItemService.removeItemFromPlaylist(id, songId, user);
+    return this.playlistItemService.removeItemFromPlaylist(slug, songId, user);
   }
 }

@@ -14,13 +14,13 @@ import { slugify } from "shared/utils/slugify";
 export class PlaylistService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  private async getPlaylistOrFail(id: string) {
+  private async getPlaylistOrFail(slug: string) {
     const playlist = await this.prismaService.playlist.findUnique({
-      where: { id },
+      where: { slug },
     });
 
     if (!playlist) {
-      throw new NotFoundException(`Playlist with id ${id} not found`);
+      throw new NotFoundException(`Playlist not found`);
     }
 
     return playlist;
@@ -72,9 +72,9 @@ export class PlaylistService {
     });
   }
 
-  async findById(id: string) {
+  async findBySlug(slug: string) {
     const playlist = await this.prismaService.playlist.findUnique({
-      where: { id },
+      where: { slug },
       include: {
         playlistItem: {
           include: {
@@ -85,7 +85,7 @@ export class PlaylistService {
     });
 
     if (!playlist) {
-      throw new NotFoundException(`Playlist with id ${id} not found`);
+      throw new NotFoundException(`Playlist not found`);
     }
 
     return playlist;
@@ -103,8 +103,8 @@ export class PlaylistService {
     });
   }
 
-  async update(id: string, user: User, dto: UpdatePlaylistDto) {
-    const playlist = await this.getPlaylistOrFail(id);
+  async update(slug: string, user: User, dto: UpdatePlaylistDto) {
+    const playlist = await this.getPlaylistOrFail(slug);
 
     this.canModify(user, playlist);
 
@@ -117,8 +117,8 @@ export class PlaylistService {
     });
   }
 
-  async delete(id: string, user: User) {
-    const playlist = await this.getPlaylistOrFail(id);
+  async delete(slug: string, user: User) {
+    const playlist = await this.getPlaylistOrFail(slug);
 
     this.canModify(user, playlist);
 
