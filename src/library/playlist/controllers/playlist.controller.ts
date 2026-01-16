@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
@@ -14,6 +15,7 @@ import type { User } from "@prisma/client";
 
 import { Authenticated } from "auth/decorators";
 import { CurrentUser } from "auth/decorators/current-user.decorator";
+import { JwtOptionalGuard } from "auth/guards/jwt-optional.guard";
 import {
   AddItemDto,
   CreatePlaylistDto,
@@ -35,8 +37,12 @@ export class PlaylistController {
   ) {}
 
   @Get()
-  getPlaylists(@Query() pageOptions: PageOptionsDto) {
-    return this.playlistService.findAll(pageOptions);
+  @UseGuards(JwtOptionalGuard)
+  getPlaylists(
+    @Query() pageOptions: PageOptionsDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.playlistService.findAll(pageOptions, user);
   }
 
   @Get("me")
@@ -46,9 +52,10 @@ export class PlaylistController {
   }
 
   @Get(":slug")
+  @UseGuards(JwtOptionalGuard)
   @UseInterceptors(PlaylistResponseInterceptor)
-  getPlaylist(@Param("slug") slug: string) {
-    return this.playlistService.findBySlug(slug);
+  getPlaylist(@Param("slug") slug: string, @CurrentUser() user?: User) {
+    return this.playlistService.findBySlug(slug, user);
   }
 
   @Post()

@@ -3,7 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Playlist, Prisma, Role as UserRole, User } from "@prisma/client";
+import {
+  Playlist,
+  PlaylistVisibility,
+  Prisma,
+  Role as UserRole,
+  User,
+} from "@prisma/client";
 
 import { CreatePlaylistDto, UpdatePlaylistDto } from "library/playlist/dto";
 import { PrismaService } from "prisma/services/prisma.service";
@@ -26,26 +32,53 @@ export class PlaylistService {
     return playlist;
   }
 
+  private isAdmin(user?: User) {
+    return user?.role === UserRole.ADMIN;
+  }
+
+  private isOwner(user: User, playlist: Playlist) {
+    return user.id === playlist.userId;
+  }
+
   private canModify(user: User, playlist: Playlist) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isOwner = user.id === playlist.userId;
+    const isAdmin = this.isAdmin(user);
+    const isOwner = this.isOwner(user, playlist);
 
     if (!isAdmin && !isOwner) {
       throw new ForbiddenException("Insufficient permissions");
     }
   }
 
-  async findAll(pageOptions: PageOptionsDto) {
+  async findAll(pageOptions: PageOptionsDto, user?: User) {
     const { page, limit, search, order } = pageOptions;
 
-    const where = search
+    const isAdmin = user?.role === UserRole.ADMIN;
+
+    const visivilityWhere = isAdmin
+      ? {}
+      : user
+        ? {
+            OR: [
+              { visibility: PlaylistVisibility.PUBLIC },
+              { userId: user.id },
+            ],
+          }
+        : {
+            visibility: PlaylistVisibility.PUBLIC,
+          };
+
+    const searchWhere = search
       ? {
           title: {
             contains: search,
             mode: Prisma.QueryMode.insensitive,
           },
         }
-      : undefined;
+      : {};
+
+    const where: Prisma.PlaylistWhereInput = {
+      AND: [visivilityWhere, searchWhere],
+    };
 
     const [items, count] = await this.prismaService.$transaction([
       this.prismaService.playlist.findMany({
@@ -72,7 +105,7 @@ export class PlaylistService {
     });
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, user?: User) {
     const playlist = await this.prismaService.playlist.findUnique({
       where: { slug },
       include: {
@@ -86,6 +119,17 @@ export class PlaylistService {
 
     if (!playlist) {
       throw new NotFoundException(`Playlist not found`);
+    }
+
+    if (this.isAdmin(user)) {
+      console.log("admin");
+      return playlist;
+    }
+
+    const isOwner = user?.id === playlist.userId;
+
+    if (playlist.visibility === PlaylistVisibility.PRIVATE && !isOwner) {
+      throw new ForbiddenException("This playlist is private");
     }
 
     return playlist;
