@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Expose } from "class-transformer";
+import { Exclude, Expose } from "class-transformer";
 
 export class SongResponseDto {
-  @Expose()
+  @Exclude()
   @ApiProperty({ description: "Song ID" })
   id: string;
 
@@ -29,4 +29,8 @@ export class SongResponseDto {
   @Expose()
   @ApiProperty({ description: "URL to album artwork" })
   artwork: string;
+
+  @Expose()
+  @ApiProperty({ description: "Song slug" })
+  slug: string;
 }

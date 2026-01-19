@@ -38,7 +38,7 @@ export class SongController {
     return this.songService.findAll(pageOptions);
   }
 
-  @Get(":id")
+  @Get(":slug")
   @UseInterceptors(SongResponseInterceptor)
   @ApiResponse({
     status: 200,
@@ -46,8 +46,8 @@ export class SongController {
     type: SongResponseDto,
   })
   @ApiResponse({ status: 404, description: "Album not found" })
-  getSong(@Param("id") id: string) {
-    return this.songService.findById(id);
+  getSong(@Param("slug") slug: string) {
+    return this.songService.findById(slug);
   }
 
   @Post()
@@ -61,19 +61,19 @@ export class SongController {
     return this.songService.create(dto, file);
   }
 
-  @Patch(":id")
+  @Patch(":slug")
   @UseInterceptors(SongResponseInterceptor)
   @ApiResponse({ status: 200, description: "Song updated successfully" })
   @ApiResponse({ status: 404, description: "Song not found" })
-  updateSong(@Param("id") id: string, @Body() dto: UpdateSongDto) {
-    return this.songService.update(id, dto);
+  updateSong(@Param("slug") slug: string, @Body() dto: UpdateSongDto) {
+    return this.songService.update(slug, dto);
   }
 
-  @Delete(":id")
+  @Delete(":slug")
   @UseInterceptors(SongResponseInterceptor)
   @ApiResponse({ status: 200, description: "Song deleted successfully" })
   @ApiResponse({ status: 404, description: "Song not found" })
-  deleteSong(@Param("id") id: string) {
-    return this.songService.delete(id);
+  deleteSong(@Param("slug") slug: string) {
+    return this.songService.delete(slug);
   }
 }

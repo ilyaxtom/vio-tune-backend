@@ -116,6 +116,7 @@ model Song {
   title    String
   duration Int
   fileUrl  String
+  slug     String @unique
 
   artist       Artist         @relation(fields: [artistId], references: [id])
   album        Album          @relation(fields: [albumId], references: [id])
