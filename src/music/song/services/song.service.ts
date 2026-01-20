@@ -1,29 +1,28 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { CreateSongDto, UpdateSongDto } from "music/song/dto";
 import { PrismaService } from "prisma/services/prisma.service";
 import { PageDto, PageMetaDto, PageOptionsDto } from "shared/dto";
+import { slugify } from "shared/utils/slugify";
 
 import { SongFileService } from "./song-file.service";
 
 @Injectable()
 export class SongService {
-  private readonly logger = new Logger(SongService.name);
-
   constructor(
     private readonly prismaService: PrismaService,
     private readonly songFileService: SongFileService,
   ) {}
 
-  private async getSongOrFail(id: string) {
+  private async getSongOrFail(slug: string) {
     const song = await this.prismaService.song.findUnique({
-      where: { id: id },
+      where: { slug },
       include: { album: true, artist: true },
     });
 
     if (!song) {
-      throw new NotFoundException(`Song with id ${id} not found`);
+      throw new NotFoundException(`Song with slug ${slug} not found`);
     }
 
     return song;
@@ -62,8 +61,8 @@ export class SongService {
     return new PageDto(items, pageMeta);
   }
 
-  async findById(id: string) {
-    return await this.getSongOrFail(id);
+  async findById(slug: string) {
+    return await this.getSongOrFail(slug);
   }
 
   async create(dto: CreateSongDto, file: Express.Multer.File) {
@@ -85,6 +84,7 @@ export class SongService {
           fileUrl: key,
           albumId: album.id,
           artistId: album.artistId,
+          slug: slugify(dto.title),
         },
         include: {
           album: true,
@@ -97,21 +97,21 @@ export class SongService {
     }
   }
 
-  async update(id: string, dto: UpdateSongDto) {
+  async update(slug: string, dto: UpdateSongDto) {
     return this.prismaService.song.update({
-      where: { id },
+      where: { slug },
       data: dto,
       include: { album: true, artist: true },
     });
   }
 
-  async delete(id: string) {
-    const song = await this.getSongOrFail(id);
+  async delete(slug: string) {
+    const song = await this.getSongOrFail(slug);
 
     await this.songFileService.delete(song.fileUrl);
 
     return this.prismaService.song.delete({
-      where: { id },
+      where: { slug },
       include: { artist: true, album: true },
     });
   }
