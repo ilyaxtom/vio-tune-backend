@@ -5,9 +5,17 @@ import {
 } from "@nestjs/common";
 import { User } from "@prisma/client";
 
+import { LIKE_CONFIG } from "library/interactions/constants/like-config";
 import { LikeDto } from "library/interactions/dto/like.dto";
 import { Like } from "library/interactions/interfaces/like.interface";
 import { PrismaService } from "prisma/services/prisma.service";
+
+type SlugModel = {
+  findUnique: (args: {
+    where: { slug: string };
+    select: { id: true };
+  }) => Promise<{ id: string } | null>;
+};
 
 @Injectable()
 export class LikesService {
@@ -16,19 +24,16 @@ export class LikesService {
   async handleLike(dto: LikeDto, user: User) {
     const { slug, type } = dto;
 
-    const resourceId = await this.getId(type, slug);
+    const resourceId = await this.getResourceIdBySlug(type, slug);
 
     return this.toggleLike(type, resourceId, user.id);
   }
 
-  private async getId(type: Like, slug: string): Promise<string> {
-    const modelMap = {
-      [Like.SONG]: this.prismaService.song,
-      [Like.ALBUM]: this.prismaService.album,
-      [Like.PLAYLIST]: this.prismaService.playlist,
-    };
+  private async getResourceIdBySlug(type: Like, slug: string): Promise<string> {
+    const config = LIKE_CONFIG[type];
 
-    const model = modelMap[type] as any;
+    const model: SlugModel = this.prismaService[config.model];
+
     if (!model) {
       throw new BadRequestException(`Invalid type: ${type}`);
     }
@@ -39,51 +44,47 @@ export class LikesService {
     });
 
     if (!resource) {
-      throw new NotFoundException(`${type} with slug ${slug} not found`);
+      throw new NotFoundException(`Resource not found`);
     }
 
-    return resource.id as string;
+    return resource.id;
   }
 
   private async toggleLike(type: Like, resourceId: string, userId: string) {
-    const modelName = this.getJoinModelName(type);
-    const joinModel = this.prismaService[modelName];
+    const config = LIKE_CONFIG[type];
+    const modelName = config.joinModel;
+    const resourceKey = config.resourceKey;
+    const typeLabel = type.toLowerCase();
 
-    const resourceKey = `${type.toLowerCase()}Id`;
     const compositeKeyName = `userId_${resourceKey}`;
 
-    const whereCondition = {
+    const where = {
       [compositeKeyName]: {
         userId,
         [resourceKey]: resourceId,
       },
     };
 
-    const resource = await joinModel.findUnique({ where: whereCondition });
+    await this.prismaService.$transaction(async (tx) => {
+      const existing = await tx[modelName].findUnique({ where });
 
-    if (!resource) {
-      await joinModel.create({
+      if (existing) {
+        await tx[modelName].delete({ where });
+
+        return {
+          status: "unliked",
+          message: `Unliked the ${typeLabel}`,
+        };
+      }
+
+      await tx[modelName].create({
         data: {
           userId,
           [resourceKey]: resourceId,
         },
       });
-      return {
-        status: "liked",
-        message: `Successfully liked the ${type.toLowerCase()}`,
-      };
-    }
 
-    await joinModel.delete({ where: whereCondition });
-    return {
-      status: "unliked",
-      message: `Successfully unliked the ${type.toLowerCase()}`,
-    };
-  }
-
-  private getJoinModelName(type: Like) {
-    const camelType =
-      type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
-    return `userLike${camelType}`;
+      return { status: "liked", message: `Unliked the ${typeLabel}` };
+    });
   }
 }
