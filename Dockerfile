@@ -1,18 +1,29 @@
-FROM node:24.12-alpine
+FROM node:20-alpine AS deps
+WORKDIR /app
 
-WORKDIR /usr/src/app
-
-RUN mkdir -p /urs/src/app/node_modules \
-    && chown -R node:node /usr/src/app
-
-USER node
-
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
+COPY prisma ./prisma
 
 RUN npm install
+RUN npx prisma generate
 
-COPY --chown=node:node . .
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
+COPY . .
+
+RUN npm run build
+
+FROM node:20-alpine AS prod
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package*.json ./
+COPY prisma ./prisma
 
 EXPOSE 3000
-
-CMD ["npm", "run", "start:dev"]
+CMD ["node", "dist/src/main.js"]
