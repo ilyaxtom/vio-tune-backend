@@ -1,0 +1,43 @@
+stages:
+  - install
+  - test
+  - build
+  - deploy
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+cache:
+  paths:
+    - node_modules/
+
+install:
+  stage: install
+  image: node:22
+  script:
+    - npm ci
+
+test:
+  stage: test
+  image: node:22
+  script:
+    - npm ci
+    - npm run test
+
+build:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - wget -O- "$RENDER_DEPLOY_HOOK"
+  only:
+    - main
